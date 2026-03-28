@@ -1,12 +1,37 @@
 import './globals.css'
-import { Geist } from "next/font/google";
-import { cn } from "@/lib/utils";
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+import { cn } from '@/lib/utils'
 
-export const metadata = {
-  title: 'Founder Signal',
-  description: 'Aurora-inspired interface for founder signal insights.'
+const inter = Inter({ subsets: ['latin'], display: 'swap', variable: '--font-sans' })
+
+export const metadata: Metadata = {
+  title: 'Founder Signal — Validate Your Startup Idea',
+  description:
+    'AI-powered startup idea validation in seconds. Get actionable insights on market fit, competition, and risks.',
+  keywords: ['startup', 'validation', 'AI', 'business', 'entrepreneur', 'idea validation'],
+  authors: [{ name: 'Founder Signal' }],
+  openGraph: {
+    title: 'Founder Signal — Validate Your Startup Idea',
+    description:
+      'AI-powered startup idea validation in seconds. Get actionable insights on market fit, competition, and risks.',
+    url: 'https://foundersignal.ai',
+    siteName: 'Founder Signal',
+    locale: 'en_US',
+    type: 'website'
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Founder Signal — Validate Your Startup Idea',
+    description: 'AI-powered startup idea validation in seconds.',
+    creator: '@foundersignal'
+  },
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg'
+  }
 }
 
 export default function RootLayout({
@@ -15,8 +40,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={cn("font-sans", geist.variable)}>
-      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
+    <html lang="en" className={cn(inter.variable, 'font-sans')}>
+      <body className="min-h-screen bg-background text-foreground antialiased">
         {children}
       </body>
     </html>

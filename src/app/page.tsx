@@ -1,85 +1,124 @@
-const pillars = [
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Textarea } from '@/components/ui/textarea'
+
+const features = [
   {
-    title: 'Signal-first intelligence',
-    description:
-      'Combine human intuition with real-time agent telemetry so every founder story is rooted in verifiable momentum.'
+    title: 'Demand Signals',
+    description: 'Surface market clarity, urgency, and likely customer pull for your idea.'
   },
   {
-    title: 'Aurora-grade clarity',
-    description:
-      'Soft gradients, weightless typography, and a calm layout keep complex metrics readable without fatigue.'
+    title: 'Blind Spots',
+    description: 'Highlight risks, assumptions, and missing validation angles.'
   },
   {
-    title: 'Action sets ready',
-    description:
-      'Shareable next steps, shimmering callouts, and bundled resources let your team move faster after every insight.'
+    title: 'Next Moves',
+    description: 'Generate immediate validation steps and positioning ideas.'
   }
 ]
 
 export default function HomePage() {
+  const router = useRouter()
+  const [idea, setIdea] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+
+    if (!idea.trim()) {
+      setError('Please describe your startup idea.')
+      return
+    }
+
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idea })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        const encodedData = encodeURIComponent(JSON.stringify(data.data))
+        router.push(`/result?data=${encodedData}`)
+      } else {
+        setError(data.error?.message || 'Something went wrong. Please try again.')
+      }
+    } catch {
+      setError('Unable to connect. Please check your internet connection.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
-    <main className="flex min-h-screen flex-col justify-center gap-12 px-6 py-12 sm:px-10 lg:px-16">
-      <section className="relative overflow-hidden rounded-3xl border border-white/40 bg-gradient-to-br from-amber-50/80 via-slate-50 to-white p-10 shadow-2xl shadow-indigo-100/40">
-        <div className="absolute inset-0 opacity-60" aria-hidden>
-          <div className="pointer-events-none absolute -left-24 top-0 h-[480px] w-[480px] rounded-full bg-[radial-gradient(circle,_rgba(59,130,246,0.35),_transparent_60%)] blur-3xl" />
-          <div className="pointer-events-none absolute right-0 top-16 h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle,_rgba(255,194,160,0.45),_transparent_60%)] blur-3xl" />
-        </div>
-        <div className="relative space-y-6">
-          <p className="text-sm uppercase tracking-[0.5em] text-slate-500">Founder Signal</p>
-          <h1 className="text-4xl font-semibold leading-tight text-slate-900 sm:text-5xl">
-            Aurora-grade insights, ready for your next sprint.
-          </h1>
-          <p className="max-w-3xl text-lg text-slate-700">
-            Track progress signals, highlight breakthroughs, and move your roadmap forward with visual poetry inspired by luminous north
-            lights.
-          </p>
-          <div className="flex flex-wrap gap-4">
-            <button
-              type="button"
-              className="rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-slate-700"
-            >
-              Start a signal
-            </button>
-            <button
-              type="button"
-              className="rounded-full border border-slate-900/60 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 transition hover:border-slate-900"
-            >
-              View demo
-            </button>
-          </div>
-        </div>
-      </section>
+    <main className="min-h-screen bg-gradient-to-b from-white via-slate-50 to-slate-100">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-blue-400/20 blur-3xl" />
+        <div className="absolute top-20 -left-20 h-80 w-80 rounded-full bg-purple-400/15 blur-3xl" />
+        <div className="absolute top-1/2 right-1/4 h-72 w-72 rounded-full bg-pink-400/15 blur-3xl" />
+      </div>
 
-      <section className="grid gap-6 sm:grid-cols-2">
-        {pillars.map((pillar) => (
-          <article key={pillar.title} className="grid-fade rounded-2xl border border-white/70 bg-white/60 p-6 shadow-lg shadow-slate-200/70">
-            <h2 className="text-xl font-semibold text-slate-900">{pillar.title}</h2>
-            <p className="mt-3 text-slate-600">{pillar.description}</p>
-          </article>
-        ))}
-      </section>
-
-      <section className="grid gap-8 rounded-3xl border border-white/70 bg-white/70 p-8 shadow-2xl shadow-indigo-100/60 lg:grid-cols-[2fr_1fr]">
-        <div>
-          <p className="text-sm uppercase tracking-[0.6em] text-slate-500">Aurora updates</p>
-          <h2 className="mt-2 text-3xl font-semibold text-slate-900">Signal-ready artifacts for every readout</h2>
-          <p className="mt-3 text-slate-600">
-            Build reports with shimmering gradients, annotated metric cards, and exportable rows that feel calm yet confident.
+      <div className="relative z-10 container mx-auto px-4 py-16 md:py-24">
+        <section className="mb-12 text-center">
+          <p className="mb-4 text-sm font-medium uppercase tracking-widest text-blue-600">Founder Signal</p>
+          <h1 className="mb-4 text-4xl font-semibold text-slate-900 md:text-5xl">Validate Your Startup Idea</h1>
+          <p className="mx-auto max-w-2xl text-lg text-slate-600">
+            AI-powered analysis in seconds. Get actionable insights to de-risk your next move.
           </p>
-        </div>
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 to-indigo-700 p-4 text-white">
-            <p className="text-xs uppercase tracking-[0.4em] text-white/80">Current burn signal</p>
-            <p className="mt-2 text-2xl font-semibold">11.4% decrease</p>
-            <p className="text-sm text-white/70">vs last cycle</p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-amber-200 via-lime-200 to-slate-50 p-4">
-            <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Team momentum</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">+7 highlights</p>
-            <p className="text-sm text-slate-500">Shared with board notes</p>
-          </div>
-        </div>
-      </section>
+        </section>
+
+        <section className="mx-auto mb-16 max-w-2xl">
+          <Card className="border-slate-200/80 bg-white shadow-[var(--shadow-lifted)]">
+            <CardContent className="p-6 md:p-8">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="idea" className="mb-2 block text-sm font-medium text-slate-700">
+                    Describe your startup idea
+                  </label>
+                  <Textarea
+                    id="idea"
+                    placeholder="A platform that helps freelancers find equity-based startup opportunities..."
+                    value={idea}
+                    onChange={(e) => setIdea(e.target.value)}
+                    className="min-h-32 border-slate-200 bg-white text-slate-900 placeholder:text-slate-400"
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
+
+                <div className="flex justify-center">
+                  <Button type="submit" size="lg" disabled={isSubmitting} className="min-w-48 bg-primary text-primary-foreground">
+                    {isSubmitting ? 'Analyzing...' : 'Analyze Idea'}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="mx-auto grid max-w-4xl gap-6 md:grid-cols-3">
+          {features.map((feature) => (
+            <Card key={feature.title} className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)]">
+              <CardContent className="p-6">
+                <h3 className="mb-2 text-lg font-semibold text-slate-900">{feature.title}</h3>
+                <p className="text-sm text-slate-600">{feature.description}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </section>
+      </div>
     </main>
   )
 }
