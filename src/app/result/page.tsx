@@ -97,8 +97,8 @@ function BulletList({ items, emptyLabel }: { items: string[]; emptyLabel: string
 
   return (
     <ul className="space-y-2">
-      {items.map((item, index) => (
-        <li key={`${item}-${index}`} className="flex items-start gap-2 text-sm leading-6 text-slate-600">
+      {items.map((item) => (
+        <li key={item} className="flex items-start gap-2 text-sm leading-6 text-slate-600">
           <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
           <span>{item}</span>
         </li>
@@ -152,9 +152,9 @@ function CompetitorGroup({
         <p className="text-sm text-slate-500">{emptyLabel}</p>
       ) : (
         <div className="space-y-3">
-          {competitors.map((competitor, index) => (
+          {competitors.map((competitor) => (
             <Subsection
-              key={`${competitor.name}-${index}`}
+              key={competitor.name}
               title={competitor.name}
               description={competitor.positioningNotes}
             >
@@ -183,8 +183,8 @@ function PersonaGroup({ personas }: { personas: PersonaProfile[] }) {
 
   return (
     <div className="space-y-3">
-      {personas.map((persona, index) => (
-        <Subsection key={`${persona.name}-${index}`} title={persona.name} description={persona.description}>
+      {personas.map((persona) => (
+        <Subsection key={persona.name} title={persona.name} description={persona.description}>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Pain Points</p>
@@ -198,6 +198,60 @@ function PersonaGroup({ personas }: { personas: PersonaProfile[] }) {
         </Subsection>
       ))}
     </div>
+  )
+}
+
+function LoadingSkeleton() {
+  return (
+    <main className="min-h-screen bg-gradient-to-b from-white via-slate-50 to-slate-100">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-32 right-0 h-72 w-72 rounded-full bg-blue-300/15 blur-3xl" />
+        <div className="absolute left-0 top-1/3 h-80 w-80 rounded-full bg-violet-300/10 blur-3xl" />
+      </div>
+
+      <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+        <div className="animate-pulse space-y-8">
+          <Card className="border-slate-200/80 bg-white/95 shadow-[var(--shadow-lifted)]">
+            <CardContent className="flex flex-col gap-8 p-6 md:p-8 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-1 flex-col items-center gap-4 text-center lg:items-start lg:text-left">
+                <div className="h-4 w-36 rounded-full bg-slate-200" />
+
+                <div className="space-y-3">
+                  <div className="h-8 w-48 rounded bg-slate-200" />
+                  <div className="h-4 w-72 max-w-full rounded bg-slate-200" />
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+                  <div className="h-7 w-20 rounded-full bg-slate-200" />
+                  <div className="h-7 w-24 rounded-full bg-slate-200" />
+                  <div className="h-7 w-28 rounded-full bg-slate-200" />
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center gap-4 rounded-[calc(var(--radius)+0.25rem)] border border-slate-200/80 bg-slate-50/80 px-6 py-5">
+                <div className="h-36 w-36 rounded-full bg-slate-200" />
+                <div className="h-4 w-44 rounded bg-slate-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <section className="grid gap-6 md:grid-cols-2">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)]">
+                <CardContent className="space-y-4 p-6">
+                  <div className="h-5 w-32 rounded bg-slate-200" />
+                  <div className="space-y-2">
+                    <div className="h-3 w-full rounded bg-slate-100" />
+                    <div className="h-3 w-3/4 rounded bg-slate-100" />
+                    <div className="h-3 w-1/2 rounded bg-slate-100" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </section>
+        </div>
+      </div>
+    </main>
   )
 }
 
@@ -246,11 +300,7 @@ function ResultPageContent() {
   )
 
   if (!report) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-white via-slate-50 to-slate-100 px-4">
-        <p className="text-sm font-medium text-slate-600">Loading validation report...</p>
-      </main>
-    )
+    return <LoadingSkeleton />
   }
 
   const verdict = verdictStyles[report.verdict]
@@ -288,7 +338,7 @@ function ResultPageContent() {
 
             <div className="flex flex-col items-center gap-4 rounded-[calc(var(--radius)+0.25rem)] border border-slate-200/80 bg-slate-50/80 px-6 py-5">
               <div className="relative h-36 w-36">
-                <svg className="h-36 w-36 -rotate-90" viewBox="0 0 100 100">
+                <svg aria-hidden="true" className="h-36 w-36 -rotate-90" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r={SCORE_RADIUS} fill="none" stroke="#e5e7eb" strokeWidth="8" />
                   <circle
                     cx="50"
@@ -507,11 +557,7 @@ function ResultPageContent() {
 
 export default function ResultPage() {
   return (
-    <Suspense fallback={
-      <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-white via-slate-50 to-slate-100 px-4">
-        <p className="text-sm font-medium text-slate-600">Loading validation report...</p>
-      </main>
-    }>
+    <Suspense fallback={<LoadingSkeleton />}>
       <ResultPageContent />
     </Suspense>
   )
