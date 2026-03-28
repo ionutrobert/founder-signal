@@ -54,7 +54,111 @@ export async function analyzeIdea(idea: string): Promise<string> {
     clearTimeout(timeoutId);
 
     if (error instanceof Error && error.name === "AbortError") {
-      throw new Error("Request timed out after 30 seconds");
+      throw new Error("Request timed out while waiting for NVIDIA NIM");
+    }
+
+    throw error;
+  }
+}
+
+export async function streamIdeaAnalysis(
+  idea: string,
+  onToken: (token: string) => void | Promise<void>
+): Promise<void> {
+  const apiKey = process.env.NVIDIA_NIM_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("NVIDIA_NIM_API_KEY is not configured");
+  }
+
+  const { getStreamingValidationPrompt } = await import("./prompts");
+  const { system, user } = getStreamingValidationPrompt(idea);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  try {
+    const response = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+        temperature: 0.1,
+        max_tokens: 3072,
+        stream: true,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      clearTimeout(timeoutId);
+      const errorText = await response.text().catch(() => "Unknown error");
+      throw new Error(`NIM API error: ${response.status} - ${errorText}`);
+    }
+
+    const reader = response.body?.getReader();
+
+    if (!reader) {
+      clearTimeout(timeoutId);
+      throw new Error("NIM API stream body was empty");
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { value, done } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+
+      let newlineIndex = buffer.indexOf("\n");
+
+      while (newlineIndex !== -1) {
+        const rawLine = buffer.slice(0, newlineIndex).trim();
+        buffer = buffer.slice(newlineIndex + 1);
+
+        if (rawLine.startsWith("data:")) {
+          const payload = rawLine.slice(5).trim();
+
+          if (payload === "[DONE]") {
+            clearTimeout(timeoutId);
+            return;
+          }
+
+          if (payload) {
+            const parsed = JSON.parse(payload) as {
+              choices?: Array<{ delta?: { content?: string } }>;
+            };
+
+            const content = parsed.choices?.[0]?.delta?.content;
+
+            if (typeof content === "string" && content.length > 0) {
+              await onToken(content);
+            }
+          }
+        }
+
+        newlineIndex = buffer.indexOf("\n");
+      }
+    }
+
+    clearTimeout(timeoutId);
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Request timed out while waiting for NVIDIA NIM");
     }
 
     throw error;

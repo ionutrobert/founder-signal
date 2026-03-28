@@ -16,6 +16,9 @@
   --border: 229 231 235;
   --input: 229 231 235;
   --ring: 59 130 246;
+  --aurora-indigo: 99 102 241;
+  --aurora-pink: 236 72 153;
+  --aurora-blue: 59 130 246;
   --radius: 1rem;
   --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   --shadow-lifted: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
@@ -24,10 +27,37 @@
 body {
   min-height: 100vh;
   margin: 0;
-  background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent 45%),
-    linear-gradient(180deg, #fefefe 0%, #f8fafc 60%, #f1f5f9 100%);
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 10%, rgb(var(--aurora-indigo) / 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 50% at 85% 20%, rgb(var(--aurora-pink) / 0.14) 0%, transparent 45%),
+    radial-gradient(ellipse 50% 40% at 50% 80%, rgb(var(--aurora-blue) / 0.1) 0%, transparent 50%),
+    linear-gradient(180deg, rgb(255 255 255) 0%, rgb(248 250 252) 50%, rgb(241 245 249) 100%);
   color: rgb(var(--foreground));
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.logo-carousel-mask {
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-33.333%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
 }
 
 .bg-background { background-color: rgb(var(--background)); }

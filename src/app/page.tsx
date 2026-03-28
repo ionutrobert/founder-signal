@@ -5,9 +5,12 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { BarChart3, FileText, Sparkles } from 'lucide-react'
 
+import { LogoCarousel } from '@/components/logo-carousel'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
+
+const PENDING_IDEA_STORAGE_KEY = 'founder-signal:pending-idea'
 
 const features = [
   {
@@ -99,33 +102,29 @@ export default function HomePage() {
     setError(null)
 
     try {
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idea })
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        const encodedData = encodeURIComponent(JSON.stringify(data.data))
-        router.push(`/result?data=${encodedData}`)
-      } else {
-        setError(data.error?.message || 'Something went wrong. Please try again.')
-      }
+      window.sessionStorage.setItem(PENDING_IDEA_STORAGE_KEY, idea.trim())
+      router.push('/processing')
     } catch {
-      setError('Unable to connect. Please check your internet connection.')
-    } finally {
+      setError('Unable to start the live analysis. Please try again.')
       setIsSubmitting(false)
     }
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-white via-slate-50 to-slate-100">
+    <main className="min-h-screen overflow-x-clip bg-transparent">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 right-0 h-[30rem] w-[30rem] rounded-full bg-blue-300/20 blur-3xl" />
-        <div className="absolute left-[-6rem] top-24 h-[24rem] w-[24rem] rounded-full bg-violet-300/14 blur-3xl" />
-        <div className="absolute left-1/2 top-[22rem] h-[22rem] w-[22rem] -translate-x-1/2 rounded-full bg-pink-300/12 blur-3xl" />
+        <div
+          className="absolute -right-40 -top-40 h-[50rem] w-[50rem] rounded-full blur-[100px]"
+          style={{ backgroundColor: 'rgb(var(--aurora-blue) / 0.25)' }}
+        />
+        <div
+          className="absolute -left-40 top-20 h-[40rem] w-[40rem] rounded-full blur-[80px]"
+          style={{ backgroundColor: 'rgb(var(--aurora-indigo) / 0.2)' }}
+        />
+        <div
+          className="absolute left-1/3 top-[20rem] h-[35rem] w-[35rem] rounded-full blur-[70px]"
+          style={{ backgroundColor: 'rgb(var(--aurora-pink) / 0.18)' }}
+        />
       </div>
 
       <div className="relative z-10 container mx-auto px-4 py-16 md:py-24">
@@ -137,11 +136,11 @@ export default function HomePage() {
               Idea validation for founders moving fast
             </div>
 
-            <h1 className="mt-6 max-w-3xl text-5xl font-semibold tracking-[-0.045em] text-slate-950 sm:text-6xl md:text-7xl">
+            <h1 className="mt-6 max-w-3xl text-6xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-7xl md:text-8xl">
               Stop Building Things Nobody Wants
             </h1>
 
-            <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-600 md:text-xl">
+            <p className="mt-6 max-w-3xl text-xl leading-8 text-slate-600 md:text-2xl md:leading-9">
               Founder Signal helps you pressure-test an idea before you sink weeks into code, hiring, or
               positioning. Describe the problem, audience, and wedge in plain English. We surface demand
               signals, blind spots, and the next validation steps that actually matter. So you can move
@@ -174,6 +173,8 @@ export default function HomePage() {
             </p>
           </div>
         </section>
+
+        <LogoCarousel />
 
         <section className="mx-auto mb-16 max-w-5xl py-4">
           <div className="mb-8 text-center">
@@ -260,8 +261,13 @@ export default function HomePage() {
                   {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
 
                   <div className="flex justify-center">
-                    <Button type="submit" size="lg" disabled={isSubmitting} className="min-w-48 bg-primary text-primary-foreground">
-                      {isSubmitting ? 'Analyzing...' : 'Analyze Idea'}
+                    <Button
+                      type="submit"
+                      size="lg"
+                      disabled={isSubmitting}
+                      className="min-w-48 bg-primary text-primary-foreground"
+                    >
+                      {isSubmitting ? 'Preparing live analysis...' : 'Analyze Idea'}
                     </Button>
                   </div>
                 </form>

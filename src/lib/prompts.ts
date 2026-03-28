@@ -165,3 +165,41 @@ export function getValidationPrompt(idea: string): { system: string; user: strin
     ].join('\n\n')
   }
 }
+
+const streamingValidationPrompt = `
+You are a startup idea validator for Founder Signal. Analyze the IDEA block and output ONLY newline-delimited JSON events.
+
+IDEA: {idea}
+
+Emit exactly 11 lines in this order. Each line must be a single minified JSON object on one line with no markdown, no commentary, and no wrapping array:
+1. {"type":"section","name":"ideaSummary","data":{"title":string,"oneLiner":string,"category":string,"problemTheme":string,"tractionEvidence":string[]}}
+2. {"type":"section","name":"problemClarity","data":{"problemStatement":string,"severity":"critical"|"moderate"|"low","affectedUsers":string,"evidence":string[],"confidenceLevel":string}}
+3. {"type":"section","name":"targetAudience","data":{"icp":string,"keySegments":string[],"personas":[{"name":string,"description":string,"painPoints":string[],"goals":string[]}]}}
+4. {"type":"section","name":"marketInsight","data":{"tam":string,"sam":string,"som":string,"trends":string[],"growthSignals":string[]}}
+5. {"type":"section","name":"competition","data":{"directCompetitors":[{"name":string,"strengths":string[],"weaknesses":string[],"positioningNotes":string}],"indirectCompetitors":[{"name":string,"strengths":string[],"weaknesses":string[],"positioningNotes":string}],"competitiveAdvantage":string}}
+6. {"type":"section","name":"positioning","data":{"uniqueValueProposition":string,"differentiators":string[],"messagingPillars":string[],"brandPromise":string}}
+7. {"type":"section","name":"mvpScope","data":{"coreFeatures":string[],"timeline":string,"successMetrics":string[],"resourceNeeds":string[],"deferredCapabilities":string[]}}
+8. {"type":"section","name":"monetization","data":{"revenueModel":string,"pricingStrategy":string,"salesChannels":string[],"projections":string,"keyAssumptions":string[]}}
+9. {"type":"section","name":"risks","data":{"technical":string[],"market":string[],"operational":string[],"regulatory":string[]}}
+10. {"type":"score","value":number}
+11. {"type":"verdict","value":"pass"|"fail"|"needs-work"}
+
+Rules:
+- Every line must be valid JSON on its own.
+- Do not pretty-print. Keep each JSON object on a single line.
+- Do not emit an outer ValidationReport object.
+- Do not emit any text before, after, or between the JSON lines.
+- Keep every string deterministic and grounded in the idea details.
+- Arrays must contain concise bullet-ready strings without numbering.
+- Score must be an integer between 0 and 100 using the same weighted methodology as the non-streaming prompt.
+- Verdict thresholds: pass >= 80, needs-work 60-79, fail < 60.
+`
+
+export function getStreamingValidationPrompt(idea: string): { system: string; user: string } {
+  const ideaText = idea.trim()
+
+  return {
+    system: systemPrompt,
+    user: [streamingValidationPrompt.replace('{idea}', ideaText), scoringPrompt, mvpPrompt].join('\n\n')
+  }
+}

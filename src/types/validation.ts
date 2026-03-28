@@ -96,6 +96,51 @@ export interface ValidationReport {
   verdict: Verdict
 }
 
+export const validationSectionOrder = [
+  'ideaSummary',
+  'problemClarity',
+  'targetAudience',
+  'marketInsight',
+  'competition',
+  'positioning',
+  'mvpScope',
+  'monetization',
+  'risks'
+] as const
+
+export type ValidationSectionName = (typeof validationSectionOrder)[number]
+
+export type ValidationSections = Pick<ValidationReport, ValidationSectionName>
+
+type StreamSectionEvent = {
+  [K in ValidationSectionName]: {
+    type: 'section'
+    name: K
+    data: ValidationReport[K]
+  }
+}[ValidationSectionName]
+
+export type StreamAnalyzeEvent =
+  | {
+      type: 'status'
+      stage: 'connecting' | 'streaming' | 'assembling' | 'complete'
+      message: string
+    }
+  | {
+      type: 'score'
+      value: number
+    }
+  | StreamSectionEvent
+  | {
+      type: 'complete'
+      data: ValidationReport
+    }
+  | {
+      type: 'error'
+      message: string
+      recoverable?: boolean
+    }
+
 export interface APIError {
   code: string
   message: string
