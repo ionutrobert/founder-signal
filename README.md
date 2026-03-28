@@ -1,100 +1,61 @@
 # Founder Signal
 
-**Validate your startup idea before you build.**
+**Stop building things nobody wants.**
 
-Founder Signal helps founders avoid months of wasted effort by evaluating startup ideas through a structured, analyst-grade framework. Submit your idea and receive a comprehensive validation report in seconds.
+Founder Signal is a tool that helps you stress-test your startup idea before you invest months (or years) into it. You describe what you're thinking about, and it gives you a structured breakdown of the idea — problem severity, market size, competition, what to build first, how to make money, and what could go wrong.
 
-## Why Use Founder Signal?
+Think of it as a quick sanity check from a startup analyst who won't sugarcoat things.
 
-- **Save months of work**: Discover fatal flaws before you write a single line of code
-- **Investor-ready insights**: Get the same evaluation framework VCs use internally
-- **Actionable feedback**: Not just a score — understand exactly what needs work
-- **No bias**: Objective analysis based on market data, not gut feelings
+## What the report includes
 
-## What You Get
+| Section | What it covers |
+|---------|---------------|
+| **Problem Clarity** | Is this actually a problem people care about? |
+| **Target Audience** | Who are you building this for? Can you reach them? |
+| **Market Insight** | How big is the opportunity? Is the timing right? |
+| **Competition** | Who's already doing this? What's your angle? |
+| **Positioning** | How do you stand out? |
+| **MVP Scope** | What's the minimum you need to launch? |
+| **Monetization** | Revenue model and pricing strategy |
+| **Risks** | Technical, market, and operational red flags |
 
-Every validation report includes:
+Each report comes with an overall score (0-100) and a verdict: **Pass**, **Needs Work**, or **Fail**.
 
-| Section | What It Tells You |
-|---------|-------------------|
-| **Idea Summary** | Crystal-clear articulation of your concept |
-| **Problem Clarity** | Is this a real problem people will pay to solve? |
-| **Target Audience** | Who exactly is your customer? Are they reachable? |
-| **Market Insight** | Is the market big enough? Growing? Timing right? |
-| **Competition** | Who else is solving this? Can you differentiate? |
-| **Positioning** | How should you frame your value proposition? |
-| **MVP Scope** | What should you build first? What can wait? |
-| **Monetization** | How will you make money? Is it sustainable? |
-| **Risks** | What could kill this? Technical, market, operational, regulatory |
+## How it works
 
-## Scoring System
+1. Enter your startup idea on the homepage
+2. Hit Analyze — the AI evaluates it using a startup validation framework
+3. Get your report instantly
 
-Every idea receives a **0-100 score** with a clear verdict:
+No sign-up. No complicated setup. Just paste, analyze, iterate.
 
-- **Pass (80+)**: Strong foundation, minimal risk — proceed with confidence
-- **Needs Work (60-79)**: Promise but gaps — refine before building
-- **Fail (<60)**: Fundamental issues — reconsider or pivot
+## Setup
 
-## Getting Started
+You'll need Node.js/Bun and an API key for the AI backend.
 
-### Prerequisites
+```bash
+git clone https://github.com/ionutrobert/founder-signal.git
+cd founder-signal
+bun install
+cp .env.example .env.local
+# Add your API key to .env.local
+bun run dev
+```
 
-- Node.js 18+ or Bun
-- An API key for the AI service (obtain from the provider's website)
+Open `http://localhost:3000` and go.
 
-### Quick Start
+## Deploying
 
-1. **Clone and install:**
-   ```bash
-   git clone https://github.com/ionutrobert/founder-signal.git
-   cd founder-signal
-   bun install
-   ```
+The app runs anywhere Node.js runs. For Coolify or similar:
 
-2. **Configure your API key:**
-   ```bash
-   cp .env.example .env.local
-   ```
-   
-   Edit `.env.local` and add your API key.
-
-3. **Run:**
-   ```bash
-   bun run dev
-   ```
-
-4. **Open** [http://localhost:3000](http://localhost:3000) and submit your idea.
-
-## How It Works
-
-1. **Input your idea** — Describe your startup concept in your own words
-2. **AI analyzes** — Our framework applies startup analyst methodology to evaluate every dimension
-3. **Get your report** — Structured breakdown with actionable recommendations
-
-## Deployment
-
-Designed for self-hosted deployment. Works with Docker, Coolify, or any Node.js hosting:
-
-1. Build: `bun run build`
-2. Start: `bun run start`
-3. Set the API key environment variable in your hosting platform
+```bash
+bun run build
+bun run start
+# Set NVIDIA_NIM_API_KEY in your environment
+```
 
 ## License
 
-**All Rights Reserved**
+Copyright © 2026 ionutrobert. All rights reserved.
 
-Copyright © 2025 ionutrobert
-
-This software and associated documentation files are the exclusive property of the author. 
-
-**You may NOT:**
-- Use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of this software
-- Permit others to do any of the above
-
-**You MAY:**
-- View and study the code for educational purposes only
-- Fork for personal, non-commercial learning
-
-Any unauthorized use will be prosecuted to the fullest extent of the law.
-
-For licensing inquiries, contact the author.
+This software is for personal use and learning only. Redistribution and commercial use are not permitted.
