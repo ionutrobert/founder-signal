@@ -134,11 +134,23 @@ export type StreamAnalyzeEvent =
   | {
       type: 'complete'
       data: ValidationReport
+      resultId?: string
     }
   | {
       type: 'error'
       message: string
       recoverable?: boolean
+    }
+  | {
+      type: 'activity'
+      phase: string
+      section?: string
+      message: string
+    }
+  | {
+      type: 'phase'
+      phase: 'RESEARCH' | 'STRUCTURAL' | 'STRATEGIC'
+      status: 'starting' | 'active' | 'complete'
     }
 
 export interface APIError {
@@ -158,3 +170,108 @@ interface APIResponseFailure {
 }
 
 export type APIResponse<T> = APIResponseSuccess<T> | APIResponseFailure
+
+export enum ValidationPhase {
+  RESEARCH = 'RESEARCH',
+  STRUCTURAL = 'STRUCTURAL',
+  STRATEGIC = 'STRATEGIC',
+}
+
+export interface PartialFailure {
+  phase: ValidationPhase
+  section: string
+  error: string
+  recovered: boolean
+}
+
+export interface SectionScore {
+  section: string
+  score: number
+  weight: number
+}
+
+export interface PhaseResult {
+  phase: ValidationPhase
+  completed: boolean
+  duration: number
+  modelUsed: string
+  sectionScores: SectionScore[]
+  failures: PartialFailure[]
+}
+
+export interface ValidationResult extends ValidationReport {
+  phases?: PhaseResult[]
+  partialFailures?: PartialFailure[]
+}
+
+export interface ValidationRequest {
+  idea: string
+  enablePhases?: boolean
+  maxRetries?: number
+}
+
+export interface ValidationResponse {
+  result: ValidationResult
+  metadata: {
+    duration: number
+    model: string
+    phases: PhaseResult[]
+    partialFailures: PartialFailure[]
+  }
+}
+
+export function isValidationResult(obj: unknown): obj is ValidationResult {
+  if (typeof obj !== 'object' || obj === null) {
+    return false
+  }
+
+  const result = obj as Partial<ValidationResult>
+
+  return (
+    typeof result.score === 'number' &&
+    (result.verdict === 'pass' || result.verdict === 'fail' || result.verdict === 'needs-work') &&
+    typeof result.ideaSummary === 'object' &&
+    result.ideaSummary !== null
+  )
+}
+
+export function isPartialFailure(obj: unknown): obj is PartialFailure {
+  if (typeof obj !== 'object' || obj === null) {
+    return false
+  }
+
+  const failure = obj as Partial<PartialFailure>
+
+  return (
+    (failure.phase === ValidationPhase.RESEARCH ||
+     failure.phase === ValidationPhase.STRUCTURAL ||
+     failure.phase === ValidationPhase.STRATEGIC) &&
+    typeof failure.section === 'string' &&
+    typeof failure.error === 'string' &&
+    typeof failure.recovered === 'boolean'
+  )
+}
+
+export function calculateOverallScore(sectionScores: SectionScore[]): number {
+  if (sectionScores.length === 0) {
+    return 0
+  }
+
+  const totalWeight = sectionScores.reduce((sum, section) => sum + section.weight, 0)
+  const weightedSum = sectionScores.reduce(
+    (sum, section) => sum + section.score * section.weight,
+    0
+  )
+
+  return Math.round(weightedSum / totalWeight)
+}
+
+export function determineVerdict(score: number): 'pass' | 'fail' | 'needs-work' {
+  if (score >= 80) {
+    return 'pass'
+  }
+  if (score >= 60) {
+    return 'needs-work'
+  }
+  return 'fail'
+}
