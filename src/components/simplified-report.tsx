@@ -82,7 +82,7 @@ export function SimplifiedReport({ report }: SimplifiedReportProps) {
           <ul className="space-y-2">
             {topWeaknesses.length > 0 ? (
               topWeaknesses.map((weakness) => (
-                <li key={weakness.slice(0, 30)} className="flex items-start gap-2 text-sm text-slate-600">
+                <li key={weakness?.slice(0, 30) || 'empty'} className="flex items-start gap-2 text-sm text-slate-600">
                   <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
                   {weakness}
                 </li>

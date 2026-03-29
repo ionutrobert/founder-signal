@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ReportTabs } from '@/components/report-tabs'
+import { SimplifiedReport } from '@/components/simplified-report'
 import type {
   CompetitorProfile,
   PersonaProfile,
@@ -394,10 +396,12 @@ function ResultPageContent() {
               <p className="text-sm font-medium text-slate-600">Overall founder signal confidence</p>
             </div>
           </CardContent>
-        </Card>
+      </Card>
 
-        <section className="grid gap-6 md:grid-cols-2">
-          <Card className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)]">
+      <ReportTabs
+        technicalContent={(
+          <section className="grid gap-6 md:grid-cols-2">
+            <Card className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)]">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg text-slate-900">Idea Summary</CardTitle>
               <CardDescription className="text-slate-600">Core framing for the concept under review.</CardDescription>
@@ -574,10 +578,13 @@ function ResultPageContent() {
               <Subsection title="Regulatory">
                 <BulletList items={report.risks.regulatory} emptyLabel="No regulatory risks identified." />
               </Subsection>
-            </CardContent>
-          </Card>
-        </section>
-      </div>
+        </CardContent>
+      </Card>
+      </section>
+        )}
+        simplifiedContent={<SimplifiedReport report={report} />}
+      />
+    </div>
     </main>
   )
 }
