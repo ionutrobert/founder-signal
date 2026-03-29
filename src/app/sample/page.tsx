@@ -198,12 +198,14 @@ function BulletList({ items, emptyLabel }: { items: string[]; emptyLabel: string
     return <p className="text-sm text-slate-500">{emptyLabel}</p>
   }
 
+  const cleanItem = (item: string) => item.replace(/^[•\-\*\u2022\u2023]\s*/, '').trim()
+
   return (
     <ul className="space-y-2">
       {items.map((item) => (
         <li key={item} className="flex items-start gap-2 text-sm leading-6 text-slate-600">
           <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
-          <span>{item}</span>
+          <span>{cleanItem(item)}</span>
         </li>
       ))}
     </ul>
