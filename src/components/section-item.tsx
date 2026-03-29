@@ -25,7 +25,14 @@ export function SectionItem({
 }: SectionItemProps) {
   const statusIcon = useMemo(() => {
     if (isComplete) {
-      return <CheckCircle2 className="size-4 text-primary" />
+      return (
+        <CheckCircle2 
+          className={cn(
+            'size-4 text-primary',
+            'animate-in fade-in-0 zoom-in-95 duration-200'
+          )} 
+        />
+      )
     }
     if (isActive) {
       return <LoaderCircle className="size-4 animate-spin text-primary" />
@@ -48,7 +55,7 @@ export function SectionItem({
     <div
       className={cn(
         'rounded-lg border transition-all duration-300',
-        isActive && 'border-primary/40 bg-primary/5',
+        isActive && 'border-primary/40 bg-primary/5 animate-in fade-in-0 slide-in-from-left-2 duration-200',
         isComplete && 'border-primary/20 bg-primary/5',
         !isActive && !isComplete && 'border-border/50 bg-card opacity-60'
       )}
