@@ -72,14 +72,13 @@ import {
   determineVerdict,
   ValidationSections,
 } from '../types/validation';
-import { getActivityMessages } from './activity-messages';
 import { ModelConfig } from '../types/model-config';
 import {
   generateResearchPrompt,
   generateStructuralPrompt,
   generateStrategicPrompt,
 } from './prompts';
-import { executePhaseRequest, NimClientError } from './nim-client-v2';
+import { executePhaseRequest, executePhaseRequestStreaming, NimClientError, StreamingCallbacks } from './nim-client-v2';
 import { getModelCircuitBreaker, isModelAvailable } from './circuit-breaker';
 import { refreshWorkingModel, getCachedModel, invalidateCachedModel } from './model-proxy';
 import { getRequestContext } from './request-context';
@@ -301,28 +300,19 @@ export async function executeResearchPhase(
     message: 'phase:starting',
   } as PhaseProgressEvent);
 
-  // Cycle through activity messages
-  const researchMessages = getActivityMessages('research');
-  for (const msg of researchMessages) {
+  try {
+    const prompt = generateResearchPrompt(context.idea);
+    
+    // Show processing message while API is working
     await onProgress?.({
       phase,
       status: 'streaming',
-      message: msg,
+      message: 'Analyzing market trends and competition...',
     } as PhaseProgressEvent);
-    await new Promise(resolve => setTimeout(resolve, 800));
-  }
 
-  try {
-    const prompt = generateResearchPrompt(context.idea);
     const response = await executePhaseWithRetry(phase, (model) =>
       executePhaseRequest(prompt, { temperature: 0.7, maxTokens: 3000, model })
     );
-
-    await onProgress?.({
-      phase,
-      status: 'streaming',
-      message: 'Analyzing market data...',
-    });
 
     const parsed = parseJsonResponse<ResearchResult>(response.content, phase);
 
@@ -342,11 +332,11 @@ export async function executeResearchPhase(
       data: parsed,
     };
 
-  context.phases.push(result);
+    context.phases.push(result);
 
-  // Emit phase complete
-  await onProgress?.({
-    phase: ValidationPhase.RESEARCH,
+    // Emit phase complete
+    await onProgress?.({
+      phase: ValidationPhase.RESEARCH,
     status: 'complete',
     message: 'Research phase completed',
   } as PhaseProgressEvent);
@@ -416,42 +406,66 @@ export async function executeStructuralPhase(
     message: 'Starting structural validation...',
   });
 
-  // Emit phase starting event FIRST
+  // Emit phase starting event
   await onProgress?.({
     phase: ValidationPhase.STRUCTURAL,
     status: 'streaming',
     message: 'phase:starting',
   } as PhaseProgressEvent);
 
-  // Cycle through activity messages BEFORE API call
-  const structuralSectionNames = ['problemClarity', 'targetAudience', 'marketInsight', 'monetization', 'risks'] as const;
-  for (const sectionName of structuralSectionNames) {
-    const sectionMessages = getActivityMessages(sectionName);
-    for (const msg of sectionMessages) {
-      await onProgress?.({
-        phase,
-        status: 'streaming',
-        message: msg,
-      } as PhaseProgressEvent);
-      await new Promise(resolve => setTimeout(resolve, 600));
-    }
-  }
-
   try {
     const researchContext = JSON.stringify(researchResult.data, null, 2);
     const prompt = generateStructuralPrompt(context.idea, researchContext);
 
+    // Show processing message while API is working
+    await onProgress?.({
+      phase,
+      status: 'streaming',
+      message: 'Analyzing problem clarity, target audience, and market...',
+    } as PhaseProgressEvent);
+
+    // Section keys for streaming detection
+    const structuralSectionKeys = ['problemClarity', 'targetAudience', 'marketInsight', 'monetization', 'risks'];
+
+	const formatSectionName = (key: string): string => {
+		const names: Record<string, string> = {
+			problemClarity: 'Problem clarity',
+			targetAudience: 'Target audience',
+			marketInsight: 'Market insight',
+			monetization: 'Monetization',
+			risks: 'Risks',
+			ideaSummary: 'Idea summary',
+			competition: 'Competition',
+			positioning: 'Positioning',
+			mvpScope: 'MVP scope',
+		}
+		return names[key] || key
+	}
+
+	const streamingCallbacks: StreamingCallbacks = {
+		onSection: async (key: string, data: unknown, index: number) => {
+			console.log(`[orchestrator] STRUCTURAL: Section ${key} completed (index ${index})`);
+
+			await onProgress?.({
+				phase,
+				status: 'streaming',
+				message: `Analyzed ${formatSectionName(key)}`,
+				sections: {
+					[key]: data,
+				},
+			});
+		},
+	};
+
     const response = await executePhaseWithRetry(phase, (model) =>
-      executePhaseRequest(prompt, { temperature: 0.7, maxTokens: 4000, model })
+      executePhaseRequestStreaming(prompt, structuralSectionKeys, streamingCallbacks, {
+        temperature: 0.7,
+        maxTokens: 4000,
+        model,
+      })
     );
 
     console.log('[orchestrator] STRUCTURAL: API response received, content length:', response.content.length);
-
-  await onProgress?.({
-    phase,
-    status: 'streaming',
-    message: 'Evaluating framework components...',
-  });
 
     const parsed = parseJsonResponse<StructuralResult>(response.content, phase);
 
@@ -459,7 +473,7 @@ export async function executeStructuralPhase(
       console.error('[orchestrator] STRUCTURAL: parseJsonResponse returned null, raw content length:', response.content.length);
       throw new Error('Failed to parse structural phase response');
     }
-    
+
     console.log('[orchestrator] STRUCTURAL: Parsed successfully');
 
     const duration = Date.now() - startTime;
@@ -479,46 +493,26 @@ export async function executeStructuralPhase(
 
     context.phases.push(result);
 
-    // Emit sections one by one for progressive display
-    const structuralSections = [
-      { name: 'problemClarity', data: parsed.problemClarity },
-      { name: 'targetAudience', data: parsed.targetAudience },
-      { name: 'marketInsight', data: parsed.marketInsight },
-      { name: 'monetization', data: parsed.monetization },
-      { name: 'risks', data: parsed.risks },
-    ] as const
+    // Emit phase complete event
+    await onProgress?.({
+      phase: ValidationPhase.STRUCTURAL,
+      status: 'complete',
+      message: 'Structural phase completed',
+    } as PhaseProgressEvent);
 
-    for (const section of structuralSections) {
-      await onProgress?.({
-        phase,
-        status: 'streaming',
-        message: `Processing ${section.name}...`,
-        sections: {
-          [section.name]: section.data,
-        },
-      })
-    }
-
-  // Emit phase complete event
-  await onProgress?.({
-    phase: ValidationPhase.STRUCTURAL,
-    status: 'complete',
-    message: 'Structural phase completed',
-  } as PhaseProgressEvent);
-
-  await onProgress?.({
-    phase,
-    status: 'complete',
-    message: 'Structural phase completed',
-    data: parsed,
-    sectionScores: structuralSectionScores,
-  });
+    await onProgress?.({
+      phase,
+      status: 'complete',
+      message: 'Structural phase completed',
+      data: parsed,
+      sectionScores: structuralSectionScores,
+    });
 
     return result;
   } catch (error) {
     const duration = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
+
     console.error('[orchestrator] STRUCTURAL phase FAILED:', errorMessage);
 
     const failure: PartialFailure = {
@@ -607,35 +601,59 @@ export async function executeStrategicPhase(
     message: 'phase:starting',
   } as PhaseProgressEvent);
 
-  // Cycle through activity messages BEFORE API call
-  const strategicSectionNames = ['ideaSummary', 'competition', 'positioning', 'mvpScope'] as const;
-  for (const sectionName of strategicSectionNames) {
-    const sectionMessages = getActivityMessages(sectionName);
-    for (const msg of sectionMessages) {
-      await onProgress?.({
-        phase,
-        status: 'streaming',
-        message: msg,
-      } as PhaseProgressEvent);
-      await new Promise(resolve => setTimeout(resolve, 600));
-    }
-  }
-
   try {
     const structuralContext = JSON.stringify(structuralResult.data, null, 2);
     const prompt = generateStrategicPrompt(context.idea, structuralContext);
 
-    const response = await executePhaseWithRetry(phase, (model) =>
-      executePhaseRequest(prompt, { temperature: 0.7, maxTokens: 4000, model })
-    );
-
-    console.log('[orchestrator] STRATEGIC: API response received, content length:', response.content.length);
-
+    // Show processing message while API is working
     await onProgress?.({
       phase,
       status: 'streaming',
-      message: 'Evaluating strategic positioning...',
-    });
+      message: 'Analyzing idea summary, competition, and positioning...',
+    } as PhaseProgressEvent);
+
+    // Section keys for streaming detection
+    const strategicSectionKeys = ['ideaSummary', 'competition', 'positioning', 'mvpScope'];
+
+	const formatSectionName = (key: string): string => {
+		const names: Record<string, string> = {
+			problemClarity: 'Problem clarity',
+			targetAudience: 'Target audience',
+			marketInsight: 'Market insight',
+			monetization: 'Monetization',
+			risks: 'Risks',
+			ideaSummary: 'Idea summary',
+			competition: 'Competition',
+			positioning: 'Positioning',
+			mvpScope: 'MVP scope',
+		}
+		return names[key] || key
+	}
+
+	const streamingCallbacks: StreamingCallbacks = {
+		onSection: async (key: string, data: unknown, index: number) => {
+			console.log(`[orchestrator] STRATEGIC: Section ${key} completed (index ${index})`);
+
+			await onProgress?.({
+				phase,
+				status: 'streaming',
+				message: `Analyzed ${formatSectionName(key)}`,
+				sections: {
+					[key]: data,
+				},
+			});
+		},
+	};
+
+    const response = await executePhaseWithRetry(phase, (model) =>
+      executePhaseRequestStreaming(prompt, strategicSectionKeys, streamingCallbacks, {
+        temperature: 0.7,
+        maxTokens: 4000,
+        model,
+      })
+    );
+
+    console.log('[orchestrator] STRATEGIC: API response received, content length:', response.content.length);
 
     const parsed = parseJsonResponse<StrategicResult>(response.content, phase);
 
@@ -643,7 +661,7 @@ export async function executeStrategicPhase(
       console.error('[orchestrator] STRATEGIC: parseJsonResponse returned null, raw content length:', response.content.length);
       throw new Error('Failed to parse strategic phase response');
     }
-    
+
     console.log('[orchestrator] STRATEGIC: Parsed successfully');
 
     const duration = Date.now() - startTime;
@@ -662,47 +680,28 @@ export async function executeStrategicPhase(
 
     context.phases.push(result);
 
-    // Emit sections one by one for progressive display
-    const strategicSections = [
-      { name: 'ideaSummary', data: parsed.ideaSummary },
-      { name: 'competition', data: parsed.competition },
-      { name: 'positioning', data: parsed.positioning },
-      { name: 'mvpScope', data: parsed.mvpScope },
-    ] as const
+    // Emit phase complete event
+    await onProgress?.({
+      phase: ValidationPhase.STRATEGIC,
+      status: 'complete',
+      message: 'Strategic phase completed',
+    } as PhaseProgressEvent);
 
-    for (const section of strategicSections) {
-      await onProgress?.({
-        phase,
-        status: 'streaming',
-        message: `Processing ${section.name}...`,
-        sections: {
-          [section.name]: section.data,
-        },
-      })
-    }
-
-  // Emit phase complete event
-  await onProgress?.({
-    phase: ValidationPhase.STRATEGIC,
-    status: 'complete',
-    message: 'Strategic phase completed',
-  } as PhaseProgressEvent);
-
-  await onProgress?.({
-    phase,
-    status: 'complete',
-    message: 'Strategic phase completed',
-    data: parsed,
-    sectionScores: strategicSectionScores,
-    finalScore: parsed.score,
-    finalVerdict: parsed.verdict,
-  });
+    await onProgress?.({
+      phase,
+      status: 'complete',
+      message: 'Strategic phase completed',
+      data: parsed,
+      sectionScores: strategicSectionScores,
+      finalScore: parsed.score,
+      finalVerdict: parsed.verdict,
+    });
 
     return result;
   } catch (error) {
     const duration = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
+
     console.error('[orchestrator] STRATEGIC phase FAILED:', errorMessage);
 
     const failure: PartialFailure = {

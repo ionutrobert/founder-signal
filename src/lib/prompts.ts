@@ -203,3 +203,208 @@ export function getStreamingValidationPrompt(idea: string): { system: string; us
     user: [streamingValidationPrompt.replace('{idea}', ideaText), scoringPrompt, mvpPrompt].join('\n\n')
   }
 }
+
+export function generateResearchPrompt(idea: string): { system: string; user: string } {
+  const ideaText = idea.trim()
+
+  const researchPrompt = `
+You are a market research specialist for Founder Signal. Analyze the IDEA block and provide market context.
+
+IDEA: ${ideaText}
+
+Focus on:
+- Market trends and growth signals
+- Competitive landscape (direct and indirect)
+- Market timing and opportunity windows
+- Industry dynamics and forces
+
+Output a JSON object with:
+{
+  "marketTrends": string[],
+  "growthSignals": string[],
+  "directCompetitors": string[],
+  "indirectCompetitors": string[],
+  "marketTiming": string,
+  "industryDynamics": string[]
+}
+
+Rules:
+- Use bullet points for all arrays
+- Be specific and data-driven
+- Focus on observable market forces
+- Cite concrete evidence where possible
+`
+
+  return {
+    system: systemPrompt,
+    user: researchPrompt
+  }
+}
+
+export function generateStructuralPrompt(idea: string, researchContext: string): { system: string; user: string } {
+  const ideaText = idea.trim()
+
+  const structuralPrompt = `
+You are a framework validation specialist for Founder Signal. Analyze the IDEA block using the research context.
+
+IDEA: ${ideaText}
+
+RESEARCH CONTEXT:
+${researchContext}
+
+Evaluate the idea against startup frameworks:
+- Problem clarity and severity
+- Target audience definition
+- Market size and opportunity
+- Business model viability
+- Execution risk assessment
+
+Output a JSON object with:
+{
+  "problemClarity": {
+    "problemStatement": string,
+    "severity": "critical"|"moderate"|"low",
+    "affectedUsers": string,
+    "evidence": string[]
+  },
+  "targetAudience": {
+    "icp": string,
+    "keySegments": string[],
+    "personas": [{
+      "name": string,
+      "description": string,
+      "painPoints": string[],
+      "goals": string[]
+    }]
+  },
+  "marketInsight": {
+    "tam": string,
+    "sam": string,
+    "som": string,
+    "trends": string[],
+    "growthSignals": string[]
+  },
+  "monetization": {
+    "revenueModel": string,
+    "pricingStrategy": string,
+    "salesChannels": string[],
+    "projections": string,
+    "keyAssumptions": string[]
+  },
+  "risks": {
+    "technical": string[],
+    "market": string[],
+    "operational": string[],
+    "regulatory": string[]
+  }
+}
+
+Rules:
+- Use bullet points for all arrays
+- Tie severity to concrete evidence
+- Provide specific personas with pain points and goals
+- Include both trends and growth signals
+- Cover all risk categories
+- Be deterministic and grounded
+`
+
+  return {
+    system: systemPrompt,
+    user: structuralPrompt
+  }
+}
+
+export function generateStrategicPrompt(idea: string, structuralContext: string): { system: string; user: string } {
+  const ideaText = idea.trim()
+
+  const strategicPrompt = `
+You are a strategic evaluation specialist for Founder Signal. Provide final assessment using the structural context.
+
+IDEA: ${ideaText}
+
+STRUCTURAL CONTEXT:
+${structuralContext}
+
+Evaluate strategic positioning and viability:
+- Competitive advantage and differentiation
+- Positioning and messaging
+- MVP scope and execution plan
+- Overall verdict and score
+
+Output a JSON object with:
+{
+  "ideaSummary": {
+    "title": string,
+    "oneLiner": string,
+    "category": string,
+    "problemTheme": string,
+    "tractionEvidence": string[]
+  },
+  "competition": {
+    "directCompetitors": [{
+      "name": string,
+      "strengths": string[],
+      "weaknesses": string[],
+      "positioningNotes": string
+    }],
+    "indirectCompetitors": [{
+      "name": string,
+      "strengths": string[],
+      "weaknesses": string[],
+      "positioningNotes": string
+    }],
+    "competitiveAdvantage": string
+  },
+  "positioning": {
+    "uniqueValueProposition": string,
+    "differentiators": string[],
+    "messagingPillars": string[],
+    "brandPromise": string
+  },
+  "mvpScope": {
+    "coreFeatures": string[],
+    "timeline": string,
+    "successMetrics": string[],
+    "resourceNeeds": string[],
+    "deferredCapabilities": string[]
+  },
+  "score": number,
+  "verdict": "pass"|"fail"|"needs-work"
+}
+
+Rules:
+- Use bullet points for all arrays
+- Score must be integer 0-100 using weights: problemClarity 25%, marketInsight 25%, competition 20%, traction 15%, execution risk 15%
+- Verdict: pass >= 80, needs-work 60-79, fail < 60
+- Provide concrete competitor analysis with strengths/weaknesses
+- Define clear MVP scope with timeline and metrics
+- Be deterministic and grounded
+`
+
+  return {
+    system: systemPrompt,
+    user: [strategicPrompt, scoringPrompt, mvpPrompt].join('\n\n')
+  }
+}
+
+export function validatePromptPhase(prompt: string, expectedPhase: 'research' | 'structural' | 'strategic'): boolean {
+  const researchKeywords = ['market', 'trends', 'competitors', 'timing', 'dynamics'];
+  const structuralKeywords = ['problem', 'audience', 'market', 'monetization', 'risks'];
+  const strategicKeywords = ['positioning', 'competition', 'mvp', 'score', 'verdict'];
+
+  const lowerPrompt = prompt.toLowerCase();
+
+  switch (expectedPhase) {
+    case 'research':
+      return researchKeywords.some(keyword => lowerPrompt.includes(keyword)) &&
+             !structuralKeywords.some(keyword => lowerPrompt.includes(keyword)) &&
+             !strategicKeywords.some(keyword => lowerPrompt.includes(keyword));
+    case 'structural':
+      return structuralKeywords.some(keyword => lowerPrompt.includes(keyword)) &&
+             !strategicKeywords.some(keyword => lowerPrompt.includes(keyword));
+    case 'strategic':
+      return strategicKeywords.some(keyword => lowerPrompt.includes(keyword));
+    default:
+      return false;
+  }
+}

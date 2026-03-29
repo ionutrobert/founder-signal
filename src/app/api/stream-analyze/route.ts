@@ -97,68 +97,103 @@ export async function POST(request: Request) {
           message: 'Starting 3-phase validation'
         })
 
-        await writeSseChunk(writer, {
-          type: 'score',
-          value: 0
-        })
+  await writeSseChunk(writer, {
+    type: 'score',
+    value: 0
+  })
 
-    const onProgress = async (event: PhaseProgressEvent) => {
-      if (event.status === 'starting') {
-        await writeSseChunk(writer, {
-          type: 'status',
-          stage: 'connecting',
-          message: event.message || `Starting ${event.phase} phase`
-        })
-      } else if (event.status === 'streaming') {
-        // Check if this is a phase event (special message pattern)
-        if (event.message === 'phase:starting') {
+  // Track sections completed for real progress calculation
+  let sectionsCompleted = 0
+
+  const onProgress = async (event: PhaseProgressEvent) => {
+    if (event.status === 'starting') {
+      await writeSseChunk(writer, {
+        type: 'status',
+        stage: 'connecting',
+        message: event.message || `Starting ${event.phase} phase`
+      })
+  } else if (event.status === 'streaming') {
+    // Check if this is a phase event (special message pattern)
+    if (event.message === 'phase:starting') {
+      await writeSseChunk(writer, {
+        type: 'phase',
+        phase: event.phase as 'RESEARCH' | 'STRUCTURAL' | 'STRATEGIC',
+        status: 'starting'
+      })
+      await writeSseFlush(writer)
+    } else if (event.message?.startsWith('section:complete:')) {
+      // Section complete notification - just log it
+      console.log('[stream-analyze] Section complete:', event.message)
+    } else if (event.message && !event.message.startsWith('phase:') && !event.message.startsWith('section:')) {
+      // Regular activity message
+      await writeSseChunk(writer, {
+        type: 'activity',
+        phase: event.phase,
+        message: event.message
+      })
+      await writeSseFlush(writer)
+    }
+    
+    // Handle sections in streaming status
+    if (event.sections) {
+      for (const [sectionName, sectionData] of Object.entries(event.sections)) {
+        if (sectionData) {
+          console.log('[stream-analyze] Emitting section:', sectionName)
           await writeSseChunk(writer, {
-            type: 'phase',
-            phase: event.phase as 'RESEARCH' | 'STRUCTURAL' | 'STRATEGIC',
-            status: 'starting'
-          })
-          await writeSseFlush(writer)
-        } else if (event.message && !event.message.startsWith('phase:')) {
-          // Regular activity message
-          await writeSseChunk(writer, {
-            type: 'activity',
-            phase: event.phase,
-            message: event.message
-          })
+            type: 'section',
+            name: sectionName as ValidationSectionName,
+            data: sectionData
+          } as StreamAnalyzeEvent)
           await writeSseFlush(writer)
         }
-      } else if (event.status === 'complete') {
-        // Emit phase complete event
-        if (event.message?.includes('phase completed')) {
-          await writeSseChunk(writer, {
-            type: 'phase',
-            phase: event.phase as 'RESEARCH' | 'STRUCTURAL' | 'STRATEGIC',
-            status: 'complete'
-          })
-          await writeSseFlush(writer)
-        }
-
+      }
+    }
+  } else if (event.status === 'complete') {
+      // Emit phase complete event
+      if (event.message?.includes('phase completed')) {
         await writeSseChunk(writer, {
-          type: 'status',
-          stage: 'streaming',
-          message: event.message || `Completed ${event.phase} phase`
-        })
-            
-      if (event.phase === 'RESEARCH') {
-        await writeSseChunk(writer, {
-          type: 'score',
-          value: 33
-        })
-        await writeSseFlush(writer)
-      } else if (event.phase === 'STRUCTURAL') {
-        await writeSseChunk(writer, {
-          type: 'score',
-          value: 66
+          type: 'phase',
+          phase: event.phase as 'RESEARCH' | 'STRUCTURAL' | 'STRATEGIC',
+          status: 'complete'
         })
         await writeSseFlush(writer)
       }
 
+      await writeSseChunk(writer, {
+        type: 'status',
+        stage: 'streaming',
+        message: event.message || `Completed ${event.phase} phase`
+      })
+
+      // Calculate real score based on sections completed
       if (event.sections) {
+        const sectionCount = Object.keys(event.sections).length
+        sectionsCompleted += sectionCount
+        
+        // Calculate progress: research=0%, structural=33%, strategic=66% base
+        // Plus incremental progress for each section
+        let baseScore = 0
+        if (event.phase === 'STRUCTURAL') {
+          baseScore = 33
+        } else if (event.phase === 'STRATEGIC') {
+          baseScore = 66
+        }
+        
+        // Incremental score within phase
+        const phaseSections = event.phase === 'STRUCTURAL' ? 5 : 4
+        const phaseProgress = sectionCount / phaseSections
+        const phaseScore = event.phase === 'RESEARCH' ? 33 : 
+                          event.phase === 'STRUCTURAL' ? 33 : 
+                          34
+        
+        const score = Math.round(baseScore + (phaseProgress * phaseScore))
+        
+        await writeSseChunk(writer, {
+          type: 'score',
+          value: Math.min(score, 100)
+        })
+        await writeSseFlush(writer)
+
         for (const [sectionName, sectionData] of Object.entries(event.sections)) {
           if (sectionData) {
             await writeSseChunk(writer, {
@@ -179,13 +214,13 @@ export async function POST(request: Request) {
         await writeSseFlush(writer)
       }
     } else if (event.status === 'failed') {
-            await writeSseChunk(writer, {
-              type: 'status',
-              stage: 'streaming',
-              message: event.message || `${event.phase} phase failed`
-            })
-          }
-        }
+      await writeSseChunk(writer, {
+        type: 'status',
+        stage: 'streaming',
+        message: event.message || `${event.phase} phase failed`
+      })
+    }
+  }
 
         const result = await orchestrate3PhaseValidation(trimmedIdea, onProgress)
 
