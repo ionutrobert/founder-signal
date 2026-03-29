@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { CheckCircle2, ChevronDown, ChevronRight, LoaderCircle } from 'lucide-react'
+import { CheckCircle2, LoaderCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SectionItem } from './section-item'
 import type { ValidationSectionName, ValidationSections } from '@/types/validation'
@@ -88,11 +88,6 @@ export function PhaseCard({
             {status === 'complete' && 'Complete'}
           </p>
         </div>
-        {isExpanded ? (
-          <ChevronDown className="size-4 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="size-4 text-muted-foreground" />
-        )}
       </div>
 
       {isExpanded && (
