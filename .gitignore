@@ -9,3 +9,6 @@ bun.lockb
 dist/
 *.log
 *.local
+.results/
+test-api.js
+*.tsbuildinfo
