@@ -416,24 +416,14 @@ export async function executeStructuralPhase(
     message: 'Starting structural validation...',
   });
 
-  try {
-    const researchContext = JSON.stringify(researchResult.data, null, 2);
-    const prompt = generateStructuralPrompt(context.idea, researchContext);
-
-    const response = await executePhaseWithRetry(phase, (model) =>
-      executePhaseRequest(prompt, { temperature: 0.7, maxTokens: 4000, model })
-    );
-    
-  console.log('[orchestrator] STRUCTURAL: API response received, content length:', response.content.length);
-
-  // Emit phase starting event
+  // Emit phase starting event FIRST
   await onProgress?.({
     phase: ValidationPhase.STRUCTURAL,
     status: 'streaming',
     message: 'phase:starting',
   } as PhaseProgressEvent);
 
-  // Cycle through activity messages for each structural section
+  // Cycle through activity messages BEFORE API call
   const structuralSectionNames = ['problemClarity', 'targetAudience', 'marketInsight', 'monetization', 'risks'] as const;
   for (const sectionName of structuralSectionNames) {
     const sectionMessages = getActivityMessages(sectionName);
@@ -446,6 +436,16 @@ export async function executeStructuralPhase(
       await new Promise(resolve => setTimeout(resolve, 600));
     }
   }
+
+  try {
+    const researchContext = JSON.stringify(researchResult.data, null, 2);
+    const prompt = generateStructuralPrompt(context.idea, researchContext);
+
+    const response = await executePhaseWithRetry(phase, (model) =>
+      executePhaseRequest(prompt, { temperature: 0.7, maxTokens: 4000, model })
+    );
+
+    console.log('[orchestrator] STRUCTURAL: API response received, content length:', response.content.length);
 
   await onProgress?.({
     phase,
@@ -600,24 +600,14 @@ export async function executeStrategicPhase(
     message: 'Starting strategic evaluation...',
   });
 
-  try {
-    const structuralContext = JSON.stringify(structuralResult.data, null, 2);
-    const prompt = generateStrategicPrompt(context.idea, structuralContext);
-
-    const response = await executePhaseWithRetry(phase, (model) =>
-      executePhaseRequest(prompt, { temperature: 0.7, maxTokens: 4000, model })
-    );
-    
-  console.log('[orchestrator] STRATEGIC: API response received, content length:', response.content.length);
-
-  // Emit phase starting event
+  // Emit phase starting event FIRST
   await onProgress?.({
     phase: ValidationPhase.STRATEGIC,
     status: 'streaming',
     message: 'phase:starting',
   } as PhaseProgressEvent);
 
-  // Cycle through activity messages for each strategic section
+  // Cycle through activity messages BEFORE API call
   const strategicSectionNames = ['ideaSummary', 'competition', 'positioning', 'mvpScope'] as const;
   for (const sectionName of strategicSectionNames) {
     const sectionMessages = getActivityMessages(sectionName);
@@ -631,11 +621,21 @@ export async function executeStrategicPhase(
     }
   }
 
-  await onProgress?.({
-    phase,
-    status: 'streaming',
-    message: 'Evaluating strategic positioning...',
-  });
+  try {
+    const structuralContext = JSON.stringify(structuralResult.data, null, 2);
+    const prompt = generateStrategicPrompt(context.idea, structuralContext);
+
+    const response = await executePhaseWithRetry(phase, (model) =>
+      executePhaseRequest(prompt, { temperature: 0.7, maxTokens: 4000, model })
+    );
+
+    console.log('[orchestrator] STRATEGIC: API response received, content length:', response.content.length);
+
+    await onProgress?.({
+      phase,
+      status: 'streaming',
+      message: 'Evaluating strategic positioning...',
+    });
 
     const parsed = parseJsonResponse<StrategicResult>(response.content, phase);
 

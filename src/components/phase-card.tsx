@@ -95,19 +95,30 @@ export function PhaseCard({
         )}
       </div>
 
-      {isExpanded && phaseSections.length > 0 && (
+      {isExpanded && (
         <div className="space-y-2 border-t border-border/50 p-3">
-          {phaseSections.map((section) => (
-            <SectionItem
-              key={section.name}
-              name={section.name}
-              title={section.title}
-              description={section.description}
-              isActive={activeSection === section.name}
-              isComplete={!!sections[section.name]}
-              activityMessages={activeSection === section.name ? activityMessages : []}
-            />
-          ))}
+          {phaseSections.length > 0 ? (
+            phaseSections.map((section) => (
+              <SectionItem
+                key={section.name}
+                name={section.name}
+                title={section.title}
+                description={section.description}
+                isActive={activeSection === section.name}
+                isComplete={!!sections[section.name]}
+                activityMessages={activeSection === section.name ? activityMessages : []}
+              />
+            ))
+          ) : (
+            <div className="space-y-2">
+              {activityMessages.map((msg) => (
+                <div key={`research-${msg.slice(0, 20)}`} className="flex items-start gap-2 text-sm text-slate-600 animate-in fade-in-0 slide-in-from-left-4 duration-300">
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary/60" />
+                  <span>{msg}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
