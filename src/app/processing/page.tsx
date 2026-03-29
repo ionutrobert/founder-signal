@@ -16,6 +16,7 @@ import type {
 } from '@/types/validation'
 
 const PENDING_IDEA_STORAGE_KEY = 'founder-signal:pending-idea'
+const ANALYSIS_RESULT_STORAGE_KEY = 'founder-signal:analysis-result'
 const REDIRECT_DELAY_MS = 900
 
 export default function ProcessingPage() {
@@ -107,6 +108,13 @@ export default function ProcessingPage() {
         setCurrentPhase('complete')
         setIsStreaming(false)
         window.sessionStorage.removeItem(PENDING_IDEA_STORAGE_KEY)
+
+        // Store result in sessionStorage as fallback
+        try {
+          window.sessionStorage.setItem(ANALYSIS_RESULT_STORAGE_KEY, JSON.stringify(event.data))
+        } catch {
+          // Ignore storage errors
+        }
 
         if (redirectTimeoutRef.current) {
           window.clearTimeout(redirectTimeoutRef.current)
