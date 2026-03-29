@@ -30,32 +30,6 @@ const verdictStyles: Record<Verdict, { label: string; className: string }> = {
   }
 }
 
-function parseValidationReport(dataParam: string): ValidationReport | null {
-  const attempts = [dataParam]
-
-  try {
-    const decoded = decodeURIComponent(dataParam)
-
-    if (decoded !== dataParam) {
-      attempts.push(decoded)
-    }
-  } catch {}
-
-  for (const value of attempts) {
-    try {
-      const parsed = JSON.parse(value) as unknown
-
-      if (isValidationReport(parsed)) {
-        return parsed
-      }
-    } catch {
-      continue
-    }
-  }
-
-  return null
-}
-
 function isValidationReport(value: unknown): value is ValidationReport {
   if (!value || typeof value !== 'object') {
     return false
@@ -90,17 +64,19 @@ function formatLabel(value: string) {
     .join(' ')
 }
 
-function BulletList({ items, emptyLabel }: { items: string[]; emptyLabel: string }) {
-  if (items.length === 0) {
+function BulletList({ items, emptyLabel }: { items?: string[] | null; emptyLabel: string }) {
+  if (!items || items.length === 0) {
     return <p className="text-sm text-slate-500">{emptyLabel}</p>
   }
+
+  const cleanItem = (item: string) => item.replace(/^[•\-\*\u2022\u2023]\s*/, '').trim()
 
   return (
     <ul className="space-y-2">
       {items.map((item) => (
         <li key={item} className="flex items-start gap-2 text-sm leading-6 text-slate-600">
           <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
-          <span>{item}</span>
+          <span>{cleanItem(item)}</span>
         </li>
       ))}
     </ul>
@@ -142,42 +118,47 @@ function CompetitorGroup({
   emptyLabel
 }: {
   title: string
-  competitors: CompetitorProfile[]
+  competitors?: CompetitorProfile[] | null
   emptyLabel: string
 }) {
+  if (!competitors || competitors.length === 0) {
+    return (
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+        <p className="text-sm text-slate-500">{emptyLabel}</p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-      {competitors.length === 0 ? (
-        <p className="text-sm text-slate-500">{emptyLabel}</p>
-      ) : (
-        <div className="space-y-3">
-          {competitors.map((competitor) => (
-            <Subsection
-              key={competitor.name}
-              title={competitor.name}
-              description={competitor.positioningNotes}
-            >
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Strengths</p>
-                  <BulletList items={competitor.strengths} emptyLabel="No strengths noted." />
-                </div>
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Weaknesses</p>
-                  <BulletList items={competitor.weaknesses} emptyLabel="No weaknesses noted." />
-                </div>
+      <div className="space-y-3">
+        {competitors.map((competitor) => (
+          <Subsection
+            key={competitor.name}
+            title={competitor.name}
+            description={competitor.positioningNotes}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Strengths</p>
+                <BulletList items={competitor.strengths} emptyLabel="No strengths noted." />
               </div>
-            </Subsection>
-          ))}
-        </div>
-      )}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Weaknesses</p>
+                <BulletList items={competitor.weaknesses} emptyLabel="No weaknesses noted." />
+              </div>
+            </div>
+          </Subsection>
+        ))}
+      </div>
     </div>
   )
 }
 
-function PersonaGroup({ personas }: { personas: PersonaProfile[] }) {
-  if (personas.length === 0) {
+function PersonaGroup({ personas }: { personas?: PersonaProfile[] | null }) {
+  if (!personas || personas.length === 0) {
     return <p className="text-sm text-slate-500">No personas defined.</p>
   }
 
@@ -228,7 +209,7 @@ function LoadingSkeleton() {
                 </div>
               </div>
 
-              <div className="flex flex-col items-center gap-4 rounded-[calc(var(--radius)+0.25rem)] border border-slate-200/80 bg-slate-50/80 px-6 py-5">
+<div className="flex shrink-0 flex-col items-center gap-4 rounded-[calc(var(--radius)+0.25rem)] border border-slate-200/80 bg-slate-50/80 px-6 py-5">
                 <div className="h-36 w-36 rounded-full bg-slate-200" />
                 <div className="h-4 w-44 rounded bg-slate-200" />
               </div>
@@ -255,29 +236,75 @@ function LoadingSkeleton() {
   )
 }
 
+const ANALYSIS_RESULT_STORAGE_KEY = 'founder-signal:analysis-result'
+
 function ResultPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [report, setReport] = useState<ValidationReport | null>(null)
   const [displayScore, setDisplayScore] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const dataParam = searchParams.get('data')
+    const resultId = searchParams.get('id')
 
-    if (!dataParam) {
-      router.replace('/')
+    if (resultId) {
+      fetch(`/api/result/${resultId}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Result not found')
+          }
+          return response.json()
+        })
+        .then(data => {
+          if (data.success && isValidationReport(data.data)) {
+            setReport(data.data)
+          } else {
+            setError('Invalid result data')
+          }
+        })
+        .catch(() => {
+          setError('Failed to load result')
+        })
+        .finally(() => {
+          setIsLoading(false)
+        })
       return
     }
 
-    const parsedReport = parseValidationReport(dataParam)
+  const storedData = window.sessionStorage.getItem(ANALYSIS_RESULT_STORAGE_KEY)
 
-    if (!parsedReport) {
-      router.replace('/')
-      return
+  if (storedData) {
+    try {
+      const parsed = JSON.parse(storedData) as unknown
+      if (isValidationReport(parsed)) {
+        setReport(parsed)
+        setIsLoading(false)
+        return
+      }
+    } catch {
+      // Continue to error
     }
+    window.sessionStorage.removeItem(ANALYSIS_RESULT_STORAGE_KEY)
+  }
 
-    setReport(parsedReport)
-  }, [router, searchParams])
+  // No resultId and no stored data
+  if (!resultId) {
+    setError('No result data found. Please try analyzing your idea again.')
+    setIsLoading(false)
+    return
+  }
+  }, [searchParams])
+
+  useEffect(() => {
+    if (!isLoading && !report && error) {
+      const timeout = setTimeout(() => {
+        router.replace('/')
+      }, 100)
+      return () => clearTimeout(timeout)
+    }
+  }, [isLoading, report, error, router])
 
   useEffect(() => {
     if (!report) {
@@ -299,7 +326,7 @@ function ResultPageContent() {
     [displayScore]
   )
 
-  if (!report) {
+  if (isLoading || !report) {
     return <LoadingSkeleton />
   }
 
@@ -315,7 +342,7 @@ function ResultPageContent() {
       <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
         <Card className="border-slate-200/80 bg-white/95 shadow-[var(--shadow-lifted)]">
           <CardContent className="flex flex-col gap-8 p-6 md:p-8 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-col items-center gap-4 text-center lg:items-start lg:text-left">
+            <div className="flex min-w-0 flex-col items-center gap-4 text-center lg:items-start lg:text-left">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-blue-600">Validation report</p>
               <div className="space-y-3">
                 <h1 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
