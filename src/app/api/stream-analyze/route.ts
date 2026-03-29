@@ -259,11 +259,14 @@ export async function POST(request: Request) {
             phases: validationResult.phases
           })
 
-          await writeSseChunk(writer, {
-            type: 'complete',
-            data: result as ValidationReport,
-            resultId
-          })
+await writeSseChunk(writer, {
+  type: 'complete',
+  data: {
+    ...result,
+    phases: validationResult.phases
+  } as ValidationReport,
+  resultId
+})
           await writeSseFlush(writer)
         }
       } catch (error) {

@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { cn } from '@/lib/utils'
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,12 +11,15 @@ import { SimplifiedReport } from '@/components/simplified-report'
 import type {
   CompetitorProfile,
   PersonaProfile,
-  ValidationReport,
+  PhaseResult,
+  ValidationResult,
   Verdict
 } from '@/types/validation'
 
 const SCORE_RADIUS = 45
 const SCORE_CIRCUMFERENCE = 2 * Math.PI * SCORE_RADIUS
+
+type StrengthLevel = 'critical' | 'weak' | 'neutral' | 'good' | 'strong'
 
 const verdictStyles: Record<Verdict, { label: string; className: string }> = {
   pass: {
@@ -32,12 +36,20 @@ const verdictStyles: Record<Verdict, { label: string; className: string }> = {
   }
 }
 
-function isValidationReport(value: unknown): value is ValidationReport {
+const strengthStyles: Record<StrengthLevel, string> = {
+  critical: 'border-l-[3px] border-l-red-300 bg-red-50/30',
+  weak: 'border-l-2 border-l-amber-300 bg-amber-50/30',
+  neutral: 'border-l border-l-slate-300',
+  good: 'border-l-2 border-l-emerald-300 bg-emerald-50/30',
+  strong: 'border-l-[3px] border-l-emerald-400 bg-emerald-50/50',
+}
+
+function isValidationReport(value: unknown): value is ValidationResult {
   if (!value || typeof value !== 'object') {
     return false
   }
 
-  const report = value as Partial<ValidationReport>
+  const report = value as Partial<ValidationResult>
 
   return (
     typeof report.score === 'number' &&
@@ -56,6 +68,36 @@ function isValidationReport(value: unknown): value is ValidationReport {
 
 function clampScore(score: number) {
   return Math.max(0, Math.min(100, Math.round(score)))
+}
+
+function scoreToStrength(score: number): StrengthLevel {
+  if (score >= 80) return 'strong'
+  if (score >= 65) return 'good'
+  if (score >= 50) return 'neutral'
+  if (score >= 35) return 'weak'
+  return 'critical'
+}
+
+function getSectionStrength(
+  sectionName: string,
+  phases?: PhaseResult[] | null
+): StrengthLevel | null {
+  if (!phases || phases.length === 0) return null
+
+  for (const phase of phases) {
+    const sectionScore = phase.sectionScores?.find(
+      s => s.section === sectionName
+    )
+    if (sectionScore) {
+      return scoreToStrength(sectionScore.score)
+    }
+  }
+  return null
+}
+
+function getStrengthClass(strength: StrengthLevel | null): string {
+  if (!strength) return ''
+  return strengthStyles[strength]
 }
 
 function formatLabel(value: string) {
@@ -243,7 +285,7 @@ const ANALYSIS_RESULT_STORAGE_KEY = 'founder-signal:analysis-result'
 function ResultPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [report, setReport] = useState<ValidationReport | null>(null)
+  const [report, setReport] = useState<ValidationResult | null>(null)
   const [displayScore, setDisplayScore] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -398,126 +440,147 @@ function ResultPageContent() {
           </CardContent>
       </Card>
 
-      <ReportTabs
-        technicalContent={(
-          <section className="grid gap-6 md:grid-cols-2">
-            <Card className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg text-slate-900">Idea Summary</CardTitle>
-              <CardDescription className="text-slate-600">Core framing for the concept under review.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <Field label="Title" value={report.ideaSummary.title} />
-              <Field label="One-Liner" value={report.ideaSummary.oneLiner} />
-              <Field label="Category" value={report.ideaSummary.category} />
-              <Field label="Problem Theme" value={report.ideaSummary.problemTheme} />
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Traction Evidence</p>
-                <BulletList items={report.ideaSummary.tractionEvidence} emptyLabel="No traction evidence captured." />
-              </div>
-            </CardContent>
-          </Card>
+<ReportTabs
+technicalContent={(
+<section className="grid gap-6 md:grid-cols-2">
+<Card className={cn(
+'border-slate-200/80 bg-white shadow-[var(--shadow-soft)]',
+getStrengthClass(getSectionStrength('ideaSummary', report.phases))
+)}>
+<CardHeader className="pb-3">
+<CardTitle className="text-lg text-slate-900">Idea Summary</CardTitle>
+<CardDescription className="text-slate-600">Core framing for the concept under review.</CardDescription>
+</CardHeader>
+<CardContent className="space-y-5">
+<Field label="Title" value={report.ideaSummary.title} />
+<Field label="One-Liner" value={report.ideaSummary.oneLiner} />
+<Field label="Category" value={report.ideaSummary.category} />
+<Field label="Problem Theme" value={report.ideaSummary.problemTheme} />
+<div className="space-y-2">
+<p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Traction Evidence</p>
+<BulletList items={report.ideaSummary.tractionEvidence} emptyLabel="No traction evidence captured." />
+</div>
+</CardContent>
+</Card>
 
-          <Card className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg text-slate-900">Problem Clarity</CardTitle>
-              <CardDescription className="text-slate-600">How clearly the problem is framed and evidenced.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <Field label="Problem Statement" value={report.problemClarity.problemStatement} />
-              <Field label="Severity" value={formatLabel(report.problemClarity.severity)} />
-              <Field label="Affected Users" value={report.problemClarity.affectedUsers} />
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Evidence</p>
-                <BulletList items={report.problemClarity.evidence} emptyLabel="No problem evidence provided." />
-              </div>
-              <Field label="Confidence Level" value={report.problemClarity.confidenceLevel} />
-            </CardContent>
-          </Card>
+<Card className={cn(
+'border-slate-200/80 bg-white shadow-[var(--shadow-soft)]',
+getStrengthClass(getSectionStrength('problemClarity', report.phases))
+)}>
+<CardHeader className="pb-3">
+<CardTitle className="text-lg text-slate-900">Problem Clarity</CardTitle>
+<CardDescription className="text-slate-600">How clearly the problem is framed and evidenced.</CardDescription>
+</CardHeader>
+<CardContent className="space-y-5">
+<Field label="Problem Statement" value={report.problemClarity.problemStatement} />
+<Field label="Severity" value={formatLabel(report.problemClarity.severity)} />
+<Field label="Affected Users" value={report.problemClarity.affectedUsers} />
+<div className="space-y-2">
+<p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Evidence</p>
+<BulletList items={report.problemClarity.evidence} emptyLabel="No problem evidence provided." />
+</div>
+<Field label="Confidence Level" value={report.problemClarity.confidenceLevel} />
+</CardContent>
+</Card>
 
-          <Card className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg text-slate-900">Target Audience</CardTitle>
-              <CardDescription className="text-slate-600">Who the product serves and why they care.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <Field label="Ideal Customer Profile" value={report.targetAudience.icp} />
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Key Segments</p>
-                <BulletList items={report.targetAudience.keySegments} emptyLabel="No key segments defined." />
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Personas</p>
-                <PersonaGroup personas={report.targetAudience.personas} />
-              </div>
-            </CardContent>
-          </Card>
+<Card className={cn(
+'border-slate-200/80 bg-white shadow-[var(--shadow-soft)]',
+getStrengthClass(getSectionStrength('targetAudience', report.phases))
+)}>
+<CardHeader className="pb-3">
+<CardTitle className="text-lg text-slate-900">Target Audience</CardTitle>
+<CardDescription className="text-slate-600">Who the product serves and why they care.</CardDescription>
+</CardHeader>
+<CardContent className="space-y-5">
+<Field label="Ideal Customer Profile" value={report.targetAudience.icp} />
+<div className="space-y-2">
+<p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Key Segments</p>
+<BulletList items={report.targetAudience.keySegments} emptyLabel="No key segments defined." />
+</div>
+<div className="space-y-2">
+<p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Personas</p>
+<PersonaGroup personas={report.targetAudience.personas} />
+</div>
+</CardContent>
+</Card>
 
-          <Card className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg text-slate-900">Market Insight</CardTitle>
-              <CardDescription className="text-slate-600">Market sizing, momentum, and directional signals.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid gap-4 sm:grid-cols-3">
-                <Field label="TAM" value={report.marketInsight.tam} />
-                <Field label="SAM" value={report.marketInsight.sam} />
-                <Field label="SOM" value={report.marketInsight.som} />
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Trends</p>
-                <BulletList items={report.marketInsight.trends} emptyLabel="No market trends listed." />
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Growth Signals</p>
+<Card className={cn(
+'border-slate-200/80 bg-white shadow-[var(--shadow-soft)]',
+getStrengthClass(getSectionStrength('marketInsight', report.phases))
+)}>
+<CardHeader className="pb-3">
+<CardTitle className="text-lg text-slate-900">Market Insight</CardTitle>
+<CardDescription className="text-slate-600">Market sizing, momentum, and directional signals.</CardDescription>
+</CardHeader>
+<CardContent className="space-y-5">
+<div className="grid gap-4 sm:grid-cols-3">
+<Field label="TAM" value={report.marketInsight.tam} />
+<Field label="SAM" value={report.marketInsight.sam} />
+<Field label="SOM" value={report.marketInsight.som} />
+</div>
+<div className="space-y-2">
+<p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Trends</p>
+<BulletList items={report.marketInsight.trends} emptyLabel="No market trends listed." />
+</div>
+<div className="space-y-2">
+<p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Growth Signals</p>
                 <BulletList items={report.marketInsight.growthSignals} emptyLabel="No growth signals listed." />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)] md:col-span-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg text-slate-900">Competition</CardTitle>
-              <CardDescription className="text-slate-600">Where the idea stands against alternatives in the market.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <CompetitorGroup
-                title="Direct Competitors"
-                competitors={report.competition.directCompetitors}
-                emptyLabel="No direct competitors listed."
-              />
-              <CompetitorGroup
-                title="Indirect Competitors"
-                competitors={report.competition.indirectCompetitors}
-                emptyLabel="No indirect competitors listed."
-              />
-              <Field label="Competitive Advantage" value={report.competition.competitiveAdvantage} />
-            </CardContent>
-          </Card>
+<Card className={cn(
+'border-slate-200/80 bg-white shadow-[var(--shadow-soft)] md:col-span-2',
+getStrengthClass(getSectionStrength('competition', report.phases))
+)}>
+<CardHeader className="pb-3">
+<CardTitle className="text-lg text-slate-900">Competition</CardTitle>
+<CardDescription className="text-slate-600">Where the idea stands against alternatives in the market.</CardDescription>
+</CardHeader>
+<CardContent className="space-y-6">
+<CompetitorGroup
+title="Direct Competitors"
+competitors={report.competition.directCompetitors}
+emptyLabel="No direct competitors listed."
+/>
+<CompetitorGroup
+title="Indirect Competitors"
+competitors={report.competition.indirectCompetitors}
+emptyLabel="No indirect competitors listed."
+/>
+<Field label="Competitive Advantage" value={report.competition.competitiveAdvantage} />
+</CardContent>
+</Card>
 
-          <Card className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg text-slate-900">Positioning</CardTitle>
-              <CardDescription className="text-slate-600">How the business should show up in the market.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <Field label="Unique Value Proposition" value={report.positioning.uniqueValueProposition} />
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Differentiators</p>
-                <BulletList items={report.positioning.differentiators} emptyLabel="No differentiators listed." />
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Messaging Pillars</p>
-                <BulletList items={report.positioning.messagingPillars} emptyLabel="No messaging pillars listed." />
-              </div>
-              <Field label="Brand Promise" value={report.positioning.brandPromise} />
-            </CardContent>
-          </Card>
+<Card className={cn(
+'border-slate-200/80 bg-white shadow-[var(--shadow-soft)]',
+getStrengthClass(getSectionStrength('positioning', report.phases))
+)}>
+<CardHeader className="pb-3">
+<CardTitle className="text-lg text-slate-900">Positioning</CardTitle>
+<CardDescription className="text-slate-600">How the business should show up in the market.</CardDescription>
+</CardHeader>
+<CardContent className="space-y-5">
+<Field label="Unique Value Proposition" value={report.positioning.uniqueValueProposition} />
+<div className="space-y-2">
+<p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Differentiators</p>
+<BulletList items={report.positioning.differentiators} emptyLabel="No differentiators listed." />
+</div>
+<div className="space-y-2">
+<p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Messaging Pillars</p>
+<BulletList items={report.positioning.messagingPillars} emptyLabel="No messaging pillars listed." />
+</div>
+<Field label="Brand Promise" value={report.positioning.brandPromise} />
+</CardContent>
+</Card>
 
-          <Card className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg text-slate-900">MVP Scope</CardTitle>
-              <CardDescription className="text-slate-600">What to build first and how to measure traction.</CardDescription>
+<Card className={cn(
+'border-slate-200/80 bg-white shadow-[var(--shadow-soft)]',
+getStrengthClass(getSectionStrength('mvpScope', report.phases))
+)}>
+<CardHeader className="pb-3">
+<CardTitle className="text-lg text-slate-900">MVP Scope</CardTitle>
+<CardDescription className="text-slate-600">What to build first and how to measure traction.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="space-y-2">
@@ -540,50 +603,56 @@ function ResultPageContent() {
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg text-slate-900">Monetization</CardTitle>
-              <CardDescription className="text-slate-600">Revenue logic, pricing, and go-to-market assumptions.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <Field label="Revenue Model" value={report.monetization.revenueModel} />
-              <Field label="Pricing Strategy" value={report.monetization.pricingStrategy} />
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Sales Channels</p>
-                <BulletList items={report.monetization.salesChannels} emptyLabel="No sales channels defined." />
-              </div>
-              <Field label="Projections" value={report.monetization.projections} />
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Key Assumptions</p>
-                <BulletList items={report.monetization.keyAssumptions} emptyLabel="No assumptions listed." />
-              </div>
-            </CardContent>
-          </Card>
+<Card className={cn(
+'border-slate-200/80 bg-white shadow-[var(--shadow-soft)]',
+getStrengthClass(getSectionStrength('monetization', report.phases))
+)}>
+<CardHeader className="pb-3">
+<CardTitle className="text-lg text-slate-900">Monetization</CardTitle>
+<CardDescription className="text-slate-600">Revenue logic, pricing, and go-to-market assumptions.</CardDescription>
+</CardHeader>
+<CardContent className="space-y-5">
+<Field label="Revenue Model" value={report.monetization.revenueModel} />
+<Field label="Pricing Strategy" value={report.monetization.pricingStrategy} />
+<div className="space-y-2">
+<p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Sales Channels</p>
+<BulletList items={report.monetization.salesChannels} emptyLabel="No sales channels defined." />
+</div>
+<Field label="Projections" value={report.monetization.projections} />
+<div className="space-y-2">
+<p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Key Assumptions</p>
+<BulletList items={report.monetization.keyAssumptions} emptyLabel="No assumptions listed." />
+</div>
+</CardContent>
+</Card>
 
-          <Card className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg text-slate-900">Risks</CardTitle>
-              <CardDescription className="text-slate-600">Operational, technical, and market risks to manage early.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Subsection title="Technical">
-                <BulletList items={report.risks.technical} emptyLabel="No technical risks identified." />
-              </Subsection>
-              <Subsection title="Market">
-                <BulletList items={report.risks.market} emptyLabel="No market risks identified." />
-              </Subsection>
-              <Subsection title="Operational">
-                <BulletList items={report.risks.operational} emptyLabel="No operational risks identified." />
-              </Subsection>
-              <Subsection title="Regulatory">
-                <BulletList items={report.risks.regulatory} emptyLabel="No regulatory risks identified." />
-              </Subsection>
-        </CardContent>
-      </Card>
-      </section>
-        )}
-        simplifiedContent={<SimplifiedReport report={report} />}
-      />
+<Card className={cn(
+'border-slate-200/80 bg-white shadow-[var(--shadow-soft)]',
+getStrengthClass(getSectionStrength('risks', report.phases))
+)}>
+<CardHeader className="pb-3">
+<CardTitle className="text-lg text-slate-900">Risks</CardTitle>
+<CardDescription className="text-slate-600">Operational, technical, and market risks to manage early.</CardDescription>
+</CardHeader>
+<CardContent className="space-y-4">
+<Subsection title="Technical">
+<BulletList items={report.risks.technical} emptyLabel="No technical risks identified." />
+</Subsection>
+<Subsection title="Market">
+<BulletList items={report.risks.market} emptyLabel="No market risks identified." />
+</Subsection>
+<Subsection title="Operational">
+<BulletList items={report.risks.operational} emptyLabel="No operational risks identified." />
+</Subsection>
+<Subsection title="Regulatory">
+<BulletList items={report.risks.regulatory} emptyLabel="No regulatory risks identified." />
+</Subsection>
+</CardContent>
+</Card>
+</section>
+)}
+simplifiedContent={<SimplifiedReport report={report} />}
+/>
     </div>
     </main>
   )
