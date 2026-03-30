@@ -32,7 +32,7 @@ export function ScoreTooltip({ score, reasoning, strength }: ScoreTooltipProps) 
         <TooltipTrigger className="ml-1.5 inline-flex items-center">
           <HelpCircle className="h-3.5 w-3.5 text-slate-400 hover:text-slate-600" />
         </TooltipTrigger>
-        <TooltipContent className="max-w-xs" side="top">
+        <TooltipContent className="max-w-xs bg-white text-slate-900 border border-slate-200 shadow-lg" side="top">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold">{score}/100</span>
