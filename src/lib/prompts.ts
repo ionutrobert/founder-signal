@@ -154,6 +154,19 @@ CONTEXT
 - Do not add new top-level sections beyond the ValidationReport schema.
 `
 
+const scoringInstructions = `
+SCORING SCALE (0-100):
+- 80-100: Excellent - strong evidence, clear problem, validated market
+- 65-79: Good - solid foundation with minor gaps
+- 50-64: Adequate - usable but needs refinement
+- 35-49: Weak - significant issues require attention
+- 0-34: Critical - fundamental problems undermine viability
+
+Each section MUST include:
+- "score": integer 0-100 based on the scale above
+- "scoreReasoning": 1-2 sentences explaining the score
+`
+
 export function getValidationPrompt(idea: string): { system: string; user: string } {
   const ideaText = idea.trim()
   return {
@@ -205,9 +218,9 @@ export function getStreamingValidationPrompt(idea: string): { system: string; us
 }
 
 export function generateResearchPrompt(idea: string): { system: string; user: string } {
-  const ideaText = idea.trim()
+const ideaText = idea.trim()
 
-  const researchPrompt = `
+const researchPrompt = `
 You are a market research specialist for Founder Signal. Analyze the IDEA block and provide market context.
 
 IDEA: ${ideaText}
@@ -224,8 +237,14 @@ Output a JSON object with:
   "growthSignals": string[],
   "directCompetitors": string[],
   "indirectCompetitors": string[],
-  "marketTiming": string,
-  "industryDynamics": string[]
+  "marketTiming": {
+    "assessment": string,
+    "score": number,
+    "scoreReasoning": string
+  },
+  "industryDynamics": string[],
+  "overallScore": number,
+  "overallReasoning": string
 }
 
 Rules:
@@ -233,11 +252,13 @@ Rules:
 - Be specific and data-driven
 - Focus on observable market forces
 - Cite concrete evidence where possible
+- Include score (0-100) and scoreReasoning for marketTiming
+- Provide overallScore reflecting market opportunity quality
 `
 
   return {
     system: systemPrompt,
-    user: researchPrompt
+    user: [researchPrompt, scoringInstructions].join('\n\n')
   }
 }
 
@@ -265,7 +286,9 @@ Output a JSON object with:
     "problemStatement": string,
     "severity": "critical"|"moderate"|"low",
     "affectedUsers": string,
-    "evidence": string[]
+    "evidence": string[],
+    "score": number,
+    "scoreReasoning": string
   },
   "targetAudience": {
     "icp": string,
@@ -275,27 +298,35 @@ Output a JSON object with:
       "description": string,
       "painPoints": string[],
       "goals": string[]
-    }]
+    }],
+    "score": number,
+    "scoreReasoning": string
   },
   "marketInsight": {
     "tam": string,
     "sam": string,
     "som": string,
     "trends": string[],
-    "growthSignals": string[]
+    "growthSignals": string[],
+    "score": number,
+    "scoreReasoning": string
   },
   "monetization": {
     "revenueModel": string,
     "pricingStrategy": string,
     "salesChannels": string[],
     "projections": string,
-    "keyAssumptions": string[]
+    "keyAssumptions": string[],
+    "score": number,
+    "scoreReasoning": string
   },
   "risks": {
     "technical": string[],
     "market": string[],
     "operational": string[],
-    "regulatory": string[]
+    "regulatory": string[],
+    "score": number,
+    "scoreReasoning": string
   }
 }
 
@@ -306,11 +337,12 @@ Rules:
 - Include both trends and growth signals
 - Cover all risk categories
 - Be deterministic and grounded
+- Include score (0-100) and scoreReasoning for each section
 `
 
   return {
     system: systemPrompt,
-    user: structuralPrompt
+    user: [structuralPrompt, scoringInstructions].join('\n\n')
   }
 }
 
@@ -338,7 +370,9 @@ Output a JSON object with:
     "oneLiner": string,
     "category": string,
     "problemTheme": string,
-    "tractionEvidence": string[]
+    "tractionEvidence": string[],
+    "score": number,
+    "scoreReasoning": string
   },
   "competition": {
     "directCompetitors": [{
@@ -353,20 +387,26 @@ Output a JSON object with:
       "weaknesses": string[],
       "positioningNotes": string
     }],
-    "competitiveAdvantage": string
+    "competitiveAdvantage": string,
+    "score": number,
+    "scoreReasoning": string
   },
   "positioning": {
     "uniqueValueProposition": string,
     "differentiators": string[],
     "messagingPillars": string[],
-    "brandPromise": string
+    "brandPromise": string,
+    "score": number,
+    "scoreReasoning": string
   },
   "mvpScope": {
     "coreFeatures": string[],
     "timeline": string,
     "successMetrics": string[],
     "resourceNeeds": string[],
-    "deferredCapabilities": string[]
+    "deferredCapabilities": string[],
+    "score": number,
+    "scoreReasoning": string
   },
   "score": number,
   "verdict": "pass"|"fail"|"needs-work"
@@ -379,11 +419,12 @@ Rules:
 - Provide concrete competitor analysis with strengths/weaknesses
 - Define clear MVP scope with timeline and metrics
 - Be deterministic and grounded
+- Include score (0-100) and scoreReasoning for each section
 `
 
   return {
     system: systemPrompt,
-    user: [strategicPrompt, scoringPrompt, mvpPrompt].join('\n\n')
+    user: [strategicPrompt, scoringInstructions, scoringPrompt, mvpPrompt].join('\n\n')
   }
 }
 
