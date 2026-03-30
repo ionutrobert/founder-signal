@@ -3,22 +3,52 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Toaster } from 'sonner'
-
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { motion } from 'framer-motion'
 import {
-  HeroSection,
-  SectionCard,
-  ActionPanel,
-  QuickStats,
-  ACPFramework,
-} from '@/components/report'
+  ChevronDown,
+  Target,
+  Users,
+  TrendingUp,
+  Sword,
+  Zap,
+  DollarSign,
+  AlertTriangle,
+  Lightbulb,
+  Clock,
+  Share2,
+  Download,
+  Copy,
+} from 'lucide-react'
+
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { scoreToStrength, type StrengthLevel } from '@/lib/strength'
+import { ScoreGauge } from '@/components/score-gauge'
+import { cn } from '@/lib/utils'
 import type {
   CompetitorProfile,
   PersonaProfile,
   PhaseResult,
   ValidationResult,
 } from '@/types/validation'
+
+// Section icon mapping
+const sectionIcons: Record<string, typeof Target> = {
+  'Why Now': Clock,
+  'Problem Clarity': Lightbulb,
+  'Target Audience': Users,
+  'Market Insight': TrendingUp,
+  Competition: Sword,
+  Positioning: Target,
+  'MVP Scope': Zap,
+  Monetization: DollarSign,
+  Risks: AlertTriangle,
+}
 
 function isValidationReport(value: unknown): value is ValidationResult {
   if (!value || typeof value !== 'object') {
@@ -63,12 +93,81 @@ function getSectionStrength(
   return null
 }
 
-function formatLabel(value: string) {
-  return value
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ')
+const strengthStyles: Record<StrengthLevel, { border: string; bg: string; text: string }> = {
+  critical: { border: 'border-red-200', bg: 'bg-red-50/50', text: 'text-red-700' },
+  weak: { border: 'border-amber-200', bg: 'bg-amber-50/50', text: 'text-amber-700' },
+  neutral: { border: 'border-slate-200', bg: 'bg-slate-50/50', text: 'text-slate-700' },
+  good: { border: 'border-emerald-200', bg: 'bg-emerald-50/50', text: 'text-emerald-700' },
+  strong: { border: 'border-emerald-300', bg: 'bg-emerald-50/50', text: 'text-emerald-700' },
+}
+
+const verdictStyles = {
+  pass: { label: 'Strong Potential', className: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  'needs-work': { label: 'Needs Refinement', className: 'bg-amber-100 text-amber-700 border-amber-200' },
+  fail: { label: 'High Risk', className: 'bg-red-100 text-red-700 border-red-200' },
+}
+
+// Collapsible Section Component
+interface ReportSectionProps {
+  title: string
+  score?: number
+  strength?: StrengthLevel | null
+  children: React.ReactNode
+  defaultOpen?: boolean
+}
+
+function ReportSection({ title, score, strength, children, defaultOpen = false }: ReportSectionProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+  const Icon = sectionIcons[title] || Target
+  const style = strength ? strengthStyles[strength] : strengthStyles.neutral
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <div className={cn(
+        'rounded-xl border bg-white overflow-hidden transition-all',
+        isOpen ? style.border : 'border-slate-200'
+      )}>
+        <CollapsibleTrigger className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                'w-10 h-10 rounded-lg flex items-center justify-center',
+                style.bg
+              )}>
+                <Icon className={cn('w-5 h-5', style.text)} />
+              </div>
+              <div className="text-left">
+                <h3 className="font-semibold text-slate-900">{title}</h3>
+                {score !== undefined && (
+                  <p className={cn('text-sm font-medium', style.text)}>
+                    Score: {score}/100
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {score !== undefined && (
+                <div className={cn(
+                  'px-2.5 py-1 rounded-full text-sm font-medium',
+                  style.bg,
+                  style.text
+                )}>
+                  {score}
+                </div>
+              )}
+              <ChevronDown className={cn(
+                'w-5 h-5 text-slate-400 transition-transform duration-200',
+                isOpen && 'rotate-180'
+              )} />
+            </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="px-5 pb-5 pt-2 border-t border-slate-100">
+            {children}
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  )
 }
 
 function BulletList({ items, emptyLabel }: { items?: string[] | null; emptyLabel: string }) {
@@ -79,10 +178,10 @@ function BulletList({ items, emptyLabel }: { items?: string[] | null; emptyLabel
   const cleanItem = (item: string) => item.replace(/^[•\-\*\u2022\u2023]\s*/, '').trim()
 
   return (
-    <ul className="space-y-2">
+    <ul className="space-y-1.5">
       {items.map((item) => (
-        <li key={item} className="flex items-start gap-2 text-sm leading-6 text-slate-600">
-          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
+        <li key={item} className="flex items-start gap-2 text-sm text-slate-600">
+          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
           <span>{cleanItem(item)}</span>
         </li>
       ))}
@@ -102,30 +201,11 @@ function Field({ label, value }: { label: string; value: unknown }) {
     }
     return String(value)
   })()
+
   return (
     <div className="space-y-1">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="text-sm leading-6 text-slate-700">{displayValue}</p>
-    </div>
-  )
-}
-
-function Subsection({
-  title,
-  children,
-  description
-}: {
-  title: string
-  children: React.ReactNode
-  description?: string
-}) {
-  return (
-    <div className="space-y-3 rounded-[calc(var(--radius)-0.1rem)] border border-slate-200/80 bg-slate-50/70 p-4">
-      <div className="space-y-1">
-        <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-        {description ? <p className="text-sm leading-6 text-slate-600">{description}</p> : null}
-      </div>
-      {children}
+      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+      <p className="text-sm text-slate-700">{displayValue}</p>
     </div>
   )
 }
@@ -133,7 +213,7 @@ function Subsection({
 function CompetitorGroup({
   title,
   competitors,
-  emptyLabel
+  emptyLabel,
 }: {
   title: string
   competitors?: CompetitorProfile[] | null
@@ -141,8 +221,8 @@ function CompetitorGroup({
 }) {
   if (!competitors || competitors.length === 0) {
     return (
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-slate-900">{title}</p>
         <p className="text-sm text-slate-500">{emptyLabel}</p>
       </div>
     )
@@ -150,25 +230,28 @@ function CompetitorGroup({
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+      <p className="text-sm font-medium text-slate-900">{title}</p>
       <div className="space-y-3">
         {competitors.map((competitor) => (
-          <Subsection
+          <div
             key={competitor.name}
-            title={competitor.name}
-            description={competitor.positioningNotes}
+            className="p-3 rounded-lg bg-slate-50 border border-slate-100 space-y-2"
           >
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Strengths</p>
-                <BulletList items={competitor.strengths} emptyLabel="No strengths noted." />
+            <p className="font-medium text-slate-900">{competitor.name}</p>
+            {competitor.positioningNotes && (
+              <p className="text-sm text-slate-600">{competitor.positioningNotes}</p>
+            )}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Strengths</p>
+                <BulletList items={competitor.strengths} emptyLabel="None noted" />
               </div>
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Weaknesses</p>
-                <BulletList items={competitor.weaknesses} emptyLabel="No weaknesses noted." />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Weaknesses</p>
+                <BulletList items={competitor.weaknesses} emptyLabel="None noted" />
               </div>
             </div>
-          </Subsection>
+          </div>
         ))}
       </div>
     </div>
@@ -183,120 +266,88 @@ function PersonaGroup({ personas }: { personas?: PersonaProfile[] | null }) {
   return (
     <div className="space-y-3">
       {personas.map((persona) => (
-        <Subsection key={persona.name} title={persona.name} description={persona.description}>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Pain Points</p>
-              <BulletList items={persona.painPoints} emptyLabel="No pain points listed." />
+        <div
+          key={persona.name}
+          className="p-3 rounded-lg bg-slate-50 border border-slate-100 space-y-2"
+        >
+          <p className="font-medium text-slate-900">{persona.name}</p>
+          <p className="text-sm text-slate-600">{persona.description}</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Pain Points</p>
+              <BulletList items={persona.painPoints} emptyLabel="None listed" />
             </div>
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Goals</p>
-              <BulletList items={persona.goals} emptyLabel="No goals listed." />
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Goals</p>
+              <BulletList items={persona.goals} emptyLabel="None listed" />
             </div>
           </div>
-        </Subsection>
+        </div>
       ))}
+    </div>
+  )
+}
+
+function SharePanel({ resultId }: { resultId: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyLink = async () => {
+    const url = `${window.location.origin}/result?id=${resultId}`
+    await navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleCopyLink}
+        className="gap-2"
+      >
+        {copied ? <Copy className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+        {copied ? 'Copied!' : 'Copy Link'}
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-2"
+      >
+        <Download className="w-4 h-4" />
+        Download PDF
+      </Button>
     </div>
   )
 }
 
 function LoadingSkeleton() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-white via-slate-50 to-slate-100">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 right-0 h-72 w-72 rounded-full bg-blue-300/15 blur-3xl" />
-        <div className="absolute left-0 top-1/3 h-80 w-80 rounded-full bg-violet-300/10 blur-3xl" />
-      </div>
-
-      <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
-        <div className="animate-pulse space-y-8">
-          <Card className="border-slate-200/80 bg-white/95 shadow-[var(--shadow-lifted)]">
-            <CardContent className="flex flex-col gap-8 p-6 md:p-8 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex min-w-0 flex-1 flex-col items-center gap-4 text-center lg:items-start lg:text-left">
-                <div className="h-4 w-36 rounded-full bg-slate-200" />
-                <div className="space-y-3">
-                  <div className="h-8 w-48 rounded bg-slate-200" />
-                  <div className="h-4 w-72 max-w-full rounded bg-slate-200" />
-                </div>
-                <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
-                  <div className="h-7 w-20 rounded-full bg-slate-200" />
-                  <div className="h-7 w-24 rounded-full bg-slate-200" />
-                  <div className="h-7 w-28 rounded-full bg-slate-200" />
-                </div>
-                <div className="mt-4 flex gap-2">
-                  <div className="h-9 w-9 rounded-lg bg-slate-200" />
-                  <div className="h-9 w-9 rounded-lg bg-slate-200" />
-                </div>
+    <main className="min-h-screen bg-slate-50">
+      <div className="max-w-4xl mx-auto px-4 py-10">
+        <div className="animate-pulse space-y-6">
+          {/* Score header skeleton */}
+          <div className="bg-white rounded-2xl p-8 border border-slate-200">
+            <div className="flex flex-col items-center gap-6">
+              <div className="h-40 w-40 rounded-full bg-slate-200" />
+              <div className="space-y-3 text-center">
+                <div className="h-6 w-32 rounded-full bg-slate-200 mx-auto" />
+                <div className="h-4 w-48 rounded bg-slate-200 mx-auto" />
               </div>
-              <div className="flex shrink-0 flex-col items-center gap-4 rounded-[calc(var(--radius)+0.25rem)] border border-slate-200/80 bg-slate-50/80 px-6 py-5">
-                <div className="relative h-36 w-36">
-                  <div className="h-36 w-36 rounded-full bg-slate-200" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-                    <div className="h-10 w-12 rounded bg-slate-300" />
-                    <div className="h-3 w-14 rounded bg-slate-300" />
-                  </div>
-                </div>
-                <div className="h-4 w-44 rounded bg-slate-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
-            <div className="space-y-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <Card key={i} className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)]">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="h-6 w-32 rounded bg-slate-200" />
-                      <div className="h-5 w-5 rounded-full bg-slate-100" />
-                    </div>
-                    <div className="h-4 w-48 rounded bg-slate-100" />
-                  </CardHeader>
-                  <CardContent className="space-y-5">
-                    <div className="space-y-3">
-                      <div className="h-3 w-24 rounded bg-slate-200" />
-                      <div className="h-4 w-full rounded bg-slate-100" />
-                    </div>
-                    <div className="space-y-3">
-                      <div className="h-3 w-28 rounded bg-slate-200" />
-                      <div className="h-4 w-3/4 rounded bg-slate-100" />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-3 w-32 rounded bg-slate-200" />
-                      <div className="flex items-start gap-2">
-                        <div className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-200" />
-                        <div className="h-3 w-40 rounded bg-slate-100" />
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-200" />
-                        <div className="h-3 w-32 rounded bg-slate-100" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            <div className="space-y-6">
-              <Card className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)]">
-                <CardContent className="p-4">
-                  <div className="h-4 w-20 rounded bg-slate-200" />
-                  <div className="mt-4 space-y-2">
-                    <div className="h-8 w-full rounded bg-slate-100" />
-                    <div className="h-8 w-full rounded bg-slate-100" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)]">
-                <CardContent className="p-4">
-                  <div className="h-4 w-24 rounded bg-slate-200" />
-                  <div className="mt-4 space-y-2">
-                    <div className="h-4 w-full rounded bg-slate-100" />
-                    <div className="h-4 w-3/4 rounded bg-slate-100" />
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </div>
+          {/* Sections skeleton */}
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white rounded-xl p-5 border border-slate-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-slate-200" />
+                <div className="flex-1">
+                  <div className="h-5 w-32 rounded bg-slate-200" />
+                  <div className="h-4 w-20 rounded bg-slate-100 mt-1" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </main>
@@ -389,6 +440,8 @@ function ResultPageContent() {
   }, [report, searchParams])
 
   const score = report ? clampScore(report.score) : 0
+  const verdict = report?.verdict || 'needs-work'
+  const verdictStyle = verdictStyles[verdict]
 
   const resultId = searchParams.get('id')
 
@@ -397,237 +450,256 @@ function ResultPageContent() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-white via-slate-50 to-slate-100">
+    <main className="min-h-screen bg-slate-50 pb-20">
       <Toaster position="top-right" />
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 right-0 h-72 w-72 rounded-full bg-blue-300/15 blur-3xl" />
-        <div className="absolute left-0 top-1/3 h-80 w-80 rounded-full bg-violet-300/10 blur-3xl" />
-      </div>
 
-      <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
-        <HeroSection
-          title={report.ideaSummary.title}
-          oneLiner={report.ideaSummary.oneLiner}
-          score={score}
-          verdict={report.verdict}
-          category={report.ideaSummary.category}
-          problemTheme={report.ideaSummary.problemTheme}
-          resultId={resultId || undefined}
-        />
+      <div className="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        {/* Header with Score and Verdict */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl p-8 sm:p-10 border border-slate-200 shadow-sm mb-8"
+        >
+          <div className="flex flex-col items-center text-center">
+            {/* Score */}
+            <ScoreGauge score={score} size={160} duration={2000} />
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
-          <div className="space-y-6">
-            <SectionCard
-              title="Why Now"
-              description="Market timing and momentum factors"
-              score={report.whyNow?.score}
-              scoreReasoning={report.whyNow?.scoreReasoning}
-              strength={getSectionStrength('whyNow', report.phases)}
-              className="border-blue-200 bg-blue-50/30"
-            >
-              <Field label="Timing Assessment" value={report.whyNow?.timing || 'Not assessed'} />
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Market Forces</p>
-                <BulletList items={report.whyNow?.marketForces} emptyLabel="No market forces identified." />
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Enabling Technology</p>
-                <BulletList items={report.whyNow?.enablingTechnology} emptyLabel="No enabling technologies identified." />
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Cultural Shift</p>
-                <BulletList items={report.whyNow?.culturalShift} emptyLabel="No cultural shifts identified." />
-              </div>
-            </SectionCard>
+            {/* Verdict */}
+            <div className="mt-6">
+              <Badge
+                variant="outline"
+                className={cn(
+                  'px-4 py-2 text-lg font-semibold border-2',
+                  verdictStyle.className
+                )}
+              >
+                {verdictStyle.label}
+              </Badge>
+            </div>
 
-            <SectionCard
-              title="Problem Clarity"
-              description="How clearly the problem is framed and evidenced."
-              score={report.problemClarity?.score}
-              scoreReasoning={report.problemClarity?.scoreReasoning}
-              strength={getSectionStrength('problemClarity', report.phases)}
-            >
+            {/* Title and Summary */}
+            <h1 className="mt-6 text-2xl sm:text-3xl font-bold text-slate-900">
+              {report.ideaSummary.title}
+            </h1>
+            <p className="mt-3 text-lg text-slate-600 max-w-2xl">
+              {report.ideaSummary.oneLiner}
+            </p>
+
+            {/* Tags */}
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+              <Badge variant="outline" className="text-slate-600">
+                {report.ideaSummary.category}
+              </Badge>
+              <Badge variant="outline" className="text-slate-600">
+                {report.ideaSummary.problemTheme}
+              </Badge>
+            </div>
+
+            {/* Share */}
+            {resultId && (
+              <div className="mt-6">
+                <SharePanel resultId={resultId} />
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Expandable Sections */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="space-y-4"
+        >
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">
+            Detailed Analysis
+          </h2>
+
+          <ReportSection
+            title="Why Now"
+            score={report.whyNow?.score}
+            strength={getSectionStrength('whyNow', report.phases)}
+          >
+            <div className="space-y-4">
+              <Field label="Timing Assessment" value={report.whyNow?.timing} />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Market Forces</p>
+                <BulletList items={report.whyNow?.marketForces} emptyLabel="No market forces identified" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Enabling Technology</p>
+                <BulletList items={report.whyNow?.enablingTechnology} emptyLabel="No enabling technologies identified" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Cultural Shift</p>
+                <BulletList items={report.whyNow?.culturalShift} emptyLabel="No cultural shifts identified" />
+              </div>
+            </div>
+          </ReportSection>
+
+          <ReportSection
+            title="Problem Clarity"
+            score={report.problemClarity?.score}
+            strength={getSectionStrength('problemClarity', report.phases)}
+          >
+            <div className="space-y-4">
               <Field label="Problem Statement" value={report.problemClarity.problemStatement} />
-              <Field label="Severity" value={formatLabel(report.problemClarity.severity)} />
+              <Field label="Severity" value={report.problemClarity.severity} />
               <Field label="Affected Users" value={report.problemClarity.affectedUsers} />
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Evidence</p>
-                <BulletList items={report.problemClarity.evidence} emptyLabel="No problem evidence provided." />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Evidence</p>
+                <BulletList items={report.problemClarity.evidence} emptyLabel="No evidence provided" />
               </div>
               <Field label="Confidence Level" value={report.problemClarity.confidenceLevel} />
-            </SectionCard>
+            </div>
+          </ReportSection>
 
-            <SectionCard
-              title="Target Audience"
-              description="Who the product serves and why they care."
-              score={report.targetAudience?.score}
-              scoreReasoning={report.targetAudience?.scoreReasoning}
-              strength={getSectionStrength('targetAudience', report.phases)}
-            >
+          <ReportSection
+            title="Target Audience"
+            score={report.targetAudience?.score}
+            strength={getSectionStrength('targetAudience', report.phases)}
+          >
+            <div className="space-y-4">
               <Field label="Ideal Customer Profile" value={report.targetAudience.icp} />
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Key Segments</p>
-                <BulletList items={report.targetAudience.keySegments} emptyLabel="No key segments defined." />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Key Segments</p>
+                <BulletList items={report.targetAudience.keySegments} emptyLabel="No key segments defined" />
               </div>
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Personas</p>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Personas</p>
                 <PersonaGroup personas={report.targetAudience.personas} />
               </div>
-            </SectionCard>
+            </div>
+          </ReportSection>
 
-            <SectionCard
-              title="Market Insight"
-              description="Market sizing, momentum, and directional signals."
-              score={report.marketInsight?.score}
-              scoreReasoning={report.marketInsight?.scoreReasoning}
-              strength={getSectionStrength('marketInsight', report.phases)}
-            >
+          <ReportSection
+            title="Market Insight"
+            score={report.marketInsight?.score}
+            strength={getSectionStrength('marketInsight', report.phases)}
+          >
+            <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-3">
                 <Field label="TAM" value={report.marketInsight.tam} />
                 <Field label="SAM" value={report.marketInsight.sam} />
                 <Field label="SOM" value={report.marketInsight.som} />
               </div>
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Trends</p>
-                <BulletList items={report.marketInsight.trends} emptyLabel="No market trends listed." />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Trends</p>
+                <BulletList items={report.marketInsight.trends} emptyLabel="No trends listed" />
               </div>
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Growth Signals</p>
-                <BulletList items={report.marketInsight.growthSignals} emptyLabel="No growth signals listed." />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Growth Signals</p>
+                <BulletList items={report.marketInsight.growthSignals} emptyLabel="No growth signals listed" />
               </div>
-            </SectionCard>
+            </div>
+          </ReportSection>
 
-            <SectionCard
-              title="Competition"
-              description="Where the idea stands against alternatives in the market."
-              score={report.competition?.score}
-              scoreReasoning={report.competition?.scoreReasoning}
-              strength={getSectionStrength('competition', report.phases)}
-            >
+          <ReportSection
+            title="Competition"
+            score={report.competition?.score}
+            strength={getSectionStrength('competition', report.phases)}
+          >
+            <div className="space-y-4">
               <CompetitorGroup
                 title="Direct Competitors"
                 competitors={report.competition.directCompetitors}
-                emptyLabel="No direct competitors listed."
+                emptyLabel="No direct competitors listed"
               />
               <CompetitorGroup
                 title="Indirect Competitors"
                 competitors={report.competition.indirectCompetitors}
-                emptyLabel="No indirect competitors listed."
+                emptyLabel="No indirect competitors listed"
               />
               <Field label="Competitive Advantage" value={report.competition.competitiveAdvantage} />
-            </SectionCard>
+            </div>
+          </ReportSection>
 
-            <SectionCard
-              title="Positioning"
-              description="How the business should show up in the market."
-              score={report.positioning?.score}
-              scoreReasoning={report.positioning?.scoreReasoning}
-              strength={getSectionStrength('positioning', report.phases)}
-            >
+          <ReportSection
+            title="Positioning"
+            score={report.positioning?.score}
+            strength={getSectionStrength('positioning', report.phases)}
+          >
+            <div className="space-y-4">
               <Field label="Unique Value Proposition" value={report.positioning.uniqueValueProposition} />
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Differentiators</p>
-                <BulletList items={report.positioning.differentiators} emptyLabel="No differentiators listed." />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Differentiators</p>
+                <BulletList items={report.positioning.differentiators} emptyLabel="No differentiators listed" />
               </div>
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Messaging Pillars</p>
-                <BulletList items={report.positioning.messagingPillars} emptyLabel="No messaging pillars listed." />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Messaging Pillars</p>
+                <BulletList items={report.positioning.messagingPillars} emptyLabel="No messaging pillars listed" />
               </div>
               <Field label="Brand Promise" value={report.positioning.brandPromise} />
-            </SectionCard>
+            </div>
+          </ReportSection>
 
-            <SectionCard
-              title="MVP Scope"
-              description="What to build first and how to measure traction."
-              score={report.mvpScope?.score}
-              scoreReasoning={report.mvpScope?.scoreReasoning}
-              strength={getSectionStrength('mvpScope', report.phases)}
-            >
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Core Features</p>
-                <BulletList items={report.mvpScope.coreFeatures} emptyLabel="No core features defined." />
+          <ReportSection
+            title="MVP Scope"
+            score={report.mvpScope?.score}
+            strength={getSectionStrength('mvpScope', report.phases)}
+          >
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Core Features</p>
+                <BulletList items={report.mvpScope.coreFeatures} emptyLabel="No core features defined" />
               </div>
               <Field label="Timeline" value={report.mvpScope.timeline} />
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Success Metrics</p>
-                <BulletList items={report.mvpScope.successMetrics} emptyLabel="No success metrics defined." />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Success Metrics</p>
+                <BulletList items={report.mvpScope.successMetrics} emptyLabel="No success metrics defined" />
               </div>
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Resource Needs</p>
-                <BulletList items={report.mvpScope.resourceNeeds} emptyLabel="No resource needs listed." />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Resource Needs</p>
+                <BulletList items={report.mvpScope.resourceNeeds} emptyLabel="No resource needs listed" />
               </div>
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Deferred Capabilities</p>
-                <BulletList items={report.mvpScope.deferredCapabilities} emptyLabel="No deferred capabilities listed." />
-              </div>
-            </SectionCard>
+            </div>
+          </ReportSection>
 
-            <SectionCard
-              title="Monetization"
-              description="Revenue logic, pricing, and go-to-market assumptions."
-              score={report.monetization?.score}
-              scoreReasoning={report.monetization?.scoreReasoning}
-              strength={getSectionStrength('monetization', report.phases)}
-            >
+          <ReportSection
+            title="Monetization"
+            score={report.monetization?.score}
+            strength={getSectionStrength('monetization', report.phases)}
+          >
+            <div className="space-y-4">
               <Field label="Revenue Model" value={report.monetization.revenueModel} />
               <Field label="Pricing Strategy" value={report.monetization.pricingStrategy} />
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Sales Channels</p>
-                <BulletList items={report.monetization.salesChannels} emptyLabel="No sales channels defined." />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Sales Channels</p>
+                <BulletList items={report.monetization.salesChannels} emptyLabel="No sales channels defined" />
               </div>
               <Field label="Projections" value={report.monetization.projections} />
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Key Assumptions</p>
-                <BulletList items={report.monetization.keyAssumptions} emptyLabel="No assumptions listed." />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Key Assumptions</p>
+                <BulletList items={report.monetization.keyAssumptions} emptyLabel="No assumptions listed" />
               </div>
-            </SectionCard>
+            </div>
+          </ReportSection>
 
-            <SectionCard
-              title="Risks"
-              description="Operational, technical, and market risks to manage early."
-              score={report.risks?.score}
-              scoreReasoning={report.risks?.scoreReasoning}
-              strength={getSectionStrength('risks', report.phases)}
-            >
-              <Subsection title="Technical">
-                <BulletList items={report.risks.technical} emptyLabel="No technical risks identified." />
-              </Subsection>
-              <Subsection title="Market">
-                <BulletList items={report.risks.market} emptyLabel="No market risks identified." />
-              </Subsection>
-              <Subsection title="Operational">
-                <BulletList items={report.risks.operational} emptyLabel="No operational risks identified." />
-              </Subsection>
-              <Subsection title="Regulatory">
-                <BulletList items={report.risks.regulatory} emptyLabel="No regulatory risks identified." />
-              </Subsection>
-            </SectionCard>
-          </div>
-
-          <div className="space-y-6">
-            {resultId && (
-              <ActionPanel resultId={resultId} title={report.ideaSummary.title} />
-            )}
-            <QuickStats report={report} />
-            <Card className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)]">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg text-slate-900">ACP Framework</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ACPFramework
-                  audience={6.5}
-                  community={5.0}
-                  product={7.0}
-                  maxScore={10}
-                  showOverall={true}
-                />
-                <p className="mt-4 text-xs text-slate-500">
-                  Placeholder scores - actual analysis coming soon
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+          <ReportSection
+            title="Risks"
+            score={report.risks?.score}
+            strength={getSectionStrength('risks', report.phases)}
+          >
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Technical</p>
+                <BulletList items={report.risks.technical} emptyLabel="No technical risks identified" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Market</p>
+                <BulletList items={report.risks.market} emptyLabel="No market risks identified" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Operational</p>
+                <BulletList items={report.risks.operational} emptyLabel="No operational risks identified" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Regulatory</p>
+                <BulletList items={report.risks.regulatory} emptyLabel="No regulatory risks identified" />
+              </div>
+            </div>
+          </ReportSection>
+        </motion.div>
       </div>
     </main>
   )

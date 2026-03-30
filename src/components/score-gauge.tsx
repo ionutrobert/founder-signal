@@ -87,8 +87,8 @@ export function ScoreGauge({ score, size = 200, duration = 2000 }: ScoreGaugePro
           cy="100"
           r="80"
           fill="none"
-          stroke="#e5e7eb"
-          strokeWidth="12"
+          stroke="#e2e8f0"
+          strokeWidth="10"
         />
         {/* Progress circle */}
         <motion.circle
@@ -97,7 +97,7 @@ export function ScoreGauge({ score, size = 200, duration = 2000 }: ScoreGaugePro
           r="80"
           fill="none"
           stroke={getScoreColor(currentScore)}
-          strokeWidth="12"
+          strokeWidth="10"
           strokeLinecap="round"
           strokeDasharray={circumference}
           initial={{ strokeDashoffset: circumference }}
@@ -106,8 +106,8 @@ export function ScoreGauge({ score, size = 200, duration = 2000 }: ScoreGaugePro
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <motion.span 
-          className="text-5xl font-bold text-slate-900"
+        <motion.span
+          className="text-4xl font-bold text-slate-900 tabular-nums"
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3 }}
@@ -115,23 +115,8 @@ export function ScoreGauge({ score, size = 200, duration = 2000 }: ScoreGaugePro
           {currentScore}
         </motion.span>
         {isAnimating && (
-          <span className="text-sm text-slate-500 mt-1">Calculating...</span>
+          <span className="text-xs text-slate-400 mt-1">Calculating...</span>
         )}
-      </div>
-      {/* Score range indicators */}
-      <div className="absolute -bottom-8 left-0 right-0 flex justify-center gap-4 text-xs">
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-red-500" />
-          <span className="text-slate-500">0-49</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-yellow-500" />
-          <span className="text-slate-500">50-89</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-green-500" />
-          <span className="text-slate-500">90+</span>
-        </div>
       </div>
     </div>
   )
