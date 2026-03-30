@@ -61,7 +61,7 @@ export function ShareButtons({ resultId, title }: ShareButtonsProps) {
         variant="outline"
         size="sm"
         onClick={handleCopyLink}
-        className="gap-1.5"
+        className="gap-1.5 min-h-11"
       >
         <Copy className="h-4 w-4" />
         Copy Link
@@ -71,7 +71,7 @@ export function ShareButtons({ resultId, title }: ShareButtonsProps) {
         variant="outline"
         size="sm"
         onClick={handleDownloadPDF}
-        className="gap-1.5"
+        className="gap-1.5 min-h-11"
       >
         <Download className="h-4 w-4" />
         Download PDF

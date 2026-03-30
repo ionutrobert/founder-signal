@@ -25,7 +25,7 @@ export function ReportTabs({
           type="button"
           onClick={() => setActiveTab('technical')}
           className={cn(
-            'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200',
+            'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 min-h-11',
             activeTab === 'technical'
               ? 'bg-white text-slate-900 shadow-sm'
               : 'text-slate-600 hover:text-slate-900'
@@ -37,7 +37,7 @@ export function ReportTabs({
           type="button"
           onClick={() => setActiveTab('simplified')}
           className={cn(
-            'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200',
+            'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 min-h-11',
             activeTab === 'simplified'
               ? 'bg-white text-slate-900 shadow-sm'
               : 'text-slate-600 hover:text-slate-900'
