@@ -28,88 +28,119 @@ IDEA: {idea}
 
 You MUST respond with a single JSON object that contains every section in this order:
 {
-  "ideaSummary": {
-    "title": string,
-    "oneLiner": string,
-    "category": string,
-    "problemTheme": string,
-    "tractionEvidence": string[]
-  },
-  "problemClarity": {
-    "problemStatement": string,
-    "severity": "critical"|"moderate"|"low",
-    "affectedUsers": string,
-    "evidence": string[],
-    "confidenceLevel": string
-  },
-  "targetAudience": {
-    "icp": string,
-    "keySegments": string[],
-    "personas": [{
-      "name": string,
-      "description": string,
-      "painPoints": string[],
-      "goals": string[]
-    }]
-  },
-  "marketInsight": {
-    "tam": string,
-    "sam": string,
-    "som": string,
-    "trends": string[],
-    "growthSignals": string[]
-  },
-  "competition": {
-    "directCompetitors": [{
-      "name": string,
-      "strengths": string[],
-      "weaknesses": string[],
-      "positioningNotes": string
-    }],
-    "indirectCompetitors": [{
-      "name": string,
-      "strengths": string[],
-      "weaknesses": string[],
-      "positioningNotes": string
-    }],
-    "competitiveAdvantage": string
-  },
-  "positioning": {
-    "uniqueValueProposition": string,
-    "differentiators": string[],
-    "messagingPillars": string[],
-    "brandPromise": string
-  },
-  "mvpScope": {
-    "coreFeatures": string[],
-    "timeline": string,
-    "successMetrics": string[],
-    "resourceNeeds": string[],
-    "deferredCapabilities": string[]
-  },
-  "monetization": {
-    "revenueModel": string,
-    "pricingStrategy": string,
-    "salesChannels": string[],
-    "projections": string,
-    "keyAssumptions": string[]
-  },
-  "risks": {
-    "technical": string[],
-    "market": string[],
-    "operational": string[],
-    "regulatory": string[]
-  },
-  "score": number,
-  "verdict": "pass"|"fail"|"needs-work"
+"ideaSummary": {
+"title": string,
+"oneLiner": string,
+"category": string,
+"problemTheme": string,
+"tractionEvidence": string[],
+"summary": string
+},
+"whyNow": {
+"timing": string,
+"marketForces": string[],
+"enablingTechnology": string[],
+"culturalShift": string[],
+"summary": string
+},
+"problemClarity": {
+"problemStatement": string,
+"severity": "critical"|"moderate"|"low",
+"affectedUsers": string,
+"evidence": string[],
+"confidenceLevel": string,
+"summary": string
+},
+"targetAudience": {
+"icp": string,
+"keySegments": string[],
+"personas": [{
+"name": string,
+"description": string,
+"painPoints": string[],
+"goals": string[]
+}],
+"summary": string
+},
+"marketInsight": {
+"tam": string,
+"sam": string,
+"som": string,
+"trends": string[],
+"growthSignals": string[],
+"marketGrowthRate": string,
+"marketMaturity": "emerging"|"growing"|"mature"|"declining",
+"keyMetrics": [{"name": string, "value": string, "trend": "up"|"down"|"stable"}],
+"summary": string
+},
+"competition": {
+"directCompetitors": [{
+"name": string,
+"strengths": string[],
+"weaknesses": string[],
+"positioningNotes": string
+}],
+"indirectCompetitors": [{
+"name": string,
+"strengths": string[],
+"weaknesses": string[],
+"positioningNotes": string
+}],
+"competitiveAdvantage": string,
+"marketShareEstimate": string,
+"competitiveIntensity": "low"|"medium"|"high",
+"summary": string
+},
+"positioning": {
+"uniqueValueProposition": string,
+"differentiators": string[],
+"messagingPillars": string[],
+"brandPromise": string,
+"summary": string
+},
+"mvpScope": {
+"coreFeatures": string[],
+"timeline": string,
+"successMetrics": string[],
+"resourceNeeds": string[],
+"deferredCapabilities": string[],
+"summary": string
+},
+"monetization": {
+"revenueModel": string,
+"pricingStrategy": string,
+"salesChannels": string[],
+"projections": string,
+"keyAssumptions": string[],
+"summary": string
+},
+"risks": {
+"technical": string[],
+"market": string[],
+"operational": string[],
+"regulatory": string[],
+"summary": string
+},
+"score": number,
+"verdict": "pass"|"fail"|"needs-work"
 }
 
 Rules:
 - Use bullet points for every list (traits, strengths, weaknesses, trends, metrics, resources, capabilities, etc.). Begin each bullet with "- ".
 - Present lists as bullet collections only; do not use paragraphs for multi-item answers.
 - Keep every descriptive string deterministic and grounded in the idea details; omit creative flourishes.
-- Score must be an integer between 0 and 100 calculated by weights: problemClarity 25%, marketInsight 25%, competition 20%, traction/team indicators (ideaSummary.tractionEvidence) 15%, execution risk (risks arrays) 15%. Round to the nearest whole number.
+- Each section MUST include a "summary" field: 1-2 sentences capturing the key insight for that section.
+- Score must be an integer between 0 and 100 calculated by weights: whyNow 10%, problemClarity 25%, marketInsight 25%, competition 20%, traction/team indicators (ideaSummary.tractionEvidence) 10%, execution risk (risks arrays) 10%. Round to the nearest whole number.
 - Verdict thresholds: "pass" when score >= 80, "needs-work" when score is 60-79, "fail" when score < 60.
+- whyNow.timing: explain why this idea is timely now, what has changed recently.
+- whyNow.marketForces: external market conditions favoring this idea (bullet list).
+- whyNow.enablingTechnology: technologies that make this possible now (bullet list).
+- whyNow.culturalShift: societal/behavioral changes supporting this idea (bullet list).
+- marketInsight.marketGrowthRate: estimated annual growth rate as percentage or description.
+- marketInsight.marketMaturity: stage of market development (emerging/growing/mature/declining).
+- marketInsight.keyMetrics: 3-5 quantifiable market indicators with name, value, and trend direction.
+- competition.marketShareEstimate: approximate market share of leading competitors or fragmentation level.
+- competition.competitiveIntensity: how fierce is competition (low/medium/high).
 - Tie severity, affectedUsers, and confidenceLevel to concrete evidence and cite that evidence with bullet lists.
 - Provide persona painPoints/goals and competitor strengths/weaknesses as bullet groups of concise statements.
 - Include both trends and growthSignals in marketInsight, each as bullet lists of observable forces.
@@ -123,7 +154,7 @@ Rules:
 const scoringPrompt = `
 SCORING METHODOLOGY
 - Score is an integer between 0 and 100 that reflects a weighted assessment of the idea.
-- Apply the following weights consistently: problemClarity 25%, marketInsight 25%, competition 20%, traction/team indicators (ideaSummary.tractionEvidence) 15%, execution risk (risks arrays) 15%.
+- Apply the following weights consistently: whyNow 10%, problemClarity 25%, marketInsight 25%, competition 20%, traction/team indicators (ideaSummary.tractionEvidence) 10%, execution risk (risks arrays) 10%.
 - Record how each dimension contributes inside its respective section using bullet points.
 - Round the weighted average to the nearest whole number; do not include decimals in the score field.
 
@@ -137,6 +168,13 @@ VERDICT CRITERIA
 TYPE GUIDANCE
 - The Score type is the numeric 0-100 value, and Verdict accepts only "pass", "needs-work", or "fail".
 - Always keep the verdict consistent with the computed score and the documented evidence.
+
+WHY NOW SCORING (0-100):
+- 80-100: Perfect timing - multiple converging forces (market, tech, culture) create unique window
+- 65-79: Good timing - one strong timing indicator with supporting evidence
+- 50-64: Adequate timing - some favorable conditions but not exceptional
+- 35-49: Weak timing - timing is neutral or unclear, no strong catalysts
+- 0-34: Bad timing - market not ready, technology immature, or cultural shift opposing
 `
 
 const mvpPrompt = `
@@ -163,8 +201,16 @@ SCORING SCALE (0-100):
 - 0-34: Critical - fundamental problems undermine viability
 
 Each section MUST include:
+- "summary": 1-2 sentences capturing the key insight for that section
 - "score": integer 0-100 based on the scale above
 - "scoreReasoning": 1-2 sentences explaining the score
+
+WHY NOW SCORING:
+- 80-100: Perfect timing - multiple converging forces (market, tech, culture) create unique window
+- 65-79: Good timing - one strong timing indicator with supporting evidence
+- 50-64: Adequate timing - some favorable conditions but not exceptional
+- 35-49: Weak timing - timing is neutral or unclear, no strong catalysts
+- 0-34: Bad timing - market not ready, technology immature, or cultural shift opposing
 `
 
 export function getValidationPrompt(idea: string): { system: string; user: string } {
@@ -184,18 +230,19 @@ You are a startup idea validator for Founder Signal. Analyze the IDEA block and 
 
 IDEA: {idea}
 
-Emit exactly 11 lines in this order. Each line must be a single minified JSON object on one line with no markdown, no commentary, and no wrapping array:
-1. {"type":"section","name":"ideaSummary","data":{"title":string,"oneLiner":string,"category":string,"problemTheme":string,"tractionEvidence":string[]}}
-2. {"type":"section","name":"problemClarity","data":{"problemStatement":string,"severity":"critical"|"moderate"|"low","affectedUsers":string,"evidence":string[],"confidenceLevel":string}}
-3. {"type":"section","name":"targetAudience","data":{"icp":string,"keySegments":string[],"personas":[{"name":string,"description":string,"painPoints":string[],"goals":string[]}]}}
-4. {"type":"section","name":"marketInsight","data":{"tam":string,"sam":string,"som":string,"trends":string[],"growthSignals":string[]}}
-5. {"type":"section","name":"competition","data":{"directCompetitors":[{"name":string,"strengths":string[],"weaknesses":string[],"positioningNotes":string}],"indirectCompetitors":[{"name":string,"strengths":string[],"weaknesses":string[],"positioningNotes":string}],"competitiveAdvantage":string}}
-6. {"type":"section","name":"positioning","data":{"uniqueValueProposition":string,"differentiators":string[],"messagingPillars":string[],"brandPromise":string}}
-7. {"type":"section","name":"mvpScope","data":{"coreFeatures":string[],"timeline":string,"successMetrics":string[],"resourceNeeds":string[],"deferredCapabilities":string[]}}
-8. {"type":"section","name":"monetization","data":{"revenueModel":string,"pricingStrategy":string,"salesChannels":string[],"projections":string,"keyAssumptions":string[]}}
-9. {"type":"section","name":"risks","data":{"technical":string[],"market":string[],"operational":string[],"regulatory":string[]}}
-10. {"type":"score","value":number}
-11. {"type":"verdict","value":"pass"|"fail"|"needs-work"}
+Emit exactly 12 lines in this order. Each line must be a single minified JSON object on one line with no markdown, no commentary, and no wrapping array:
+1. {"type":"section","name":"ideaSummary","data":{"title":string,"oneLiner":string,"category":string,"problemTheme":string,"tractionEvidence":string[],summary: string}}
+2. {"type":"section","name":"whyNow","data":{"timing":string,"marketForces":string[],enablingTechnology: string[], culturalShift: string[], summary: string}}
+3. {"type":"section","name":"problemClarity","data":{"problemStatement":string,"severity":"critical"|"moderate"|"low","affectedUsers":string,"evidence":string[],confidenceLevel":string,summary: string}}
+4. {"type":"section","name":"targetAudience","data":{"icp":string,"keySegments":string[],personas:[{name:string,description:string,painPoints:string[],goals:string[]}],summary: string}}
+5. {"type":"section","name":"marketInsight","data":{"tam":string,"sam":string,"som":string,"trends":string[],growthSignals":string[],marketGrowthRate: string, marketMaturity: "emerging"|"growing"|"mature"|"declining", keyMetrics: [{name: string, value: string, trend: "up"|"down"|"stable"}], summary: string}}
+6. {"type":"section","name":"competition","data":{"directCompetitors":[{name:string,strengths:string[],weaknesses:string[],positioningNotes:string}],"indirectCompetitors":[{name:string,strengths:string[],weaknesses:string[],positioningNotes:string}],competitiveAdvantage: string, marketShareEstimate: string, competitiveIntensity: "low"|"medium"|"high", summary: string}}
+7. {"type":"section","name":"positioning","data":{"uniqueValueProposition":string,differentiators:string[],messagingPillars:string[],brandPromise:string,summary: string}}
+8. {"type":"section","name":"mvpScope","data":{"coreFeatures":string[],timeline:string,successMetrics:string[],resourceNeeds:string[],deferredCapabilities:string[],summary: string}}
+9. {"type":"section","name":"monetization","data":{"revenueModel":string,pricingStrategy:string,salesChannels:string[],projections:string,keyAssumptions:string[],summary: string}}
+10. {"type":"section","name":"risks","data":{"technical":string[],market:string[],operational:string[],regulatory:string[],summary: string}}
+11. {"type":"score","value":number}
+12. {"type":"verdict","value":"pass"|"fail"|"needs-work"}
 
 Rules:
 - Every line must be valid JSON on its own.
@@ -204,8 +251,15 @@ Rules:
 - Do not emit any text before, after, or between the JSON lines.
 - Keep every string deterministic and grounded in the idea details.
 - Arrays must contain concise bullet-ready strings without numbering.
-- Score must be an integer between 0 and 100 using the same weighted methodology as the non-streaming prompt.
+- Each section must include a summary field: 1-2 sentences capturing the key insight.
+- Score must be an integer between 0 and 100 using weights: whyNow 10%, problemClarity 25%, marketInsight 25%, competition 20%, traction 10%, execution risk 10%.
 - Verdict thresholds: pass >= 80, needs-work 60-79, fail < 60.
+- whyNow.timing: explain why this idea is timely now, what has changed recently.
+- marketInsight.marketGrowthRate: estimated annual growth rate as percentage or description.
+- marketInsight.marketMaturity: stage of market development (emerging/growing/mature/declining).
+- marketInsight.keyMetrics: 3-5 quantifiable market indicators with name, value, and trend direction.
+- competition.marketShareEstimate: approximate market share of leading competitors or fragmentation level.
+- competition.competitiveIntensity: how fierce is competition (low/medium/high).
 `
 
 export function getStreamingValidationPrompt(idea: string): { system: string; user: string } {
