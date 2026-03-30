@@ -26,6 +26,24 @@ const sampleReport: ValidationReport = {
       'Reddit threads about awkward silences at social events'
     ]
   },
+  whyNow: {
+    timing: 'Post-pandemic social reconnection creates unique window',
+    marketForces: [
+      'Social anxiety increased 25% during pandemic',
+      'Bars and venues seeking engagement tools',
+      'Experience economy prioritizes authentic connections'
+    ],
+    enablingTechnology: [
+      'QR code adoption at all-time high',
+      'Mobile-first social behavior normalized',
+      'Real-time matching algorithms mature'
+    ],
+    culturalShift: [
+      'Millennials prefer experiences over dating apps',
+      'In-person events returning with tech integration',
+      'Gamification accepted in social contexts'
+    ]
+  },
   problemClarity: {
     problemStatement:
       'People struggle to initiate conversations with strangers at social venues, leading to awkward silences and missed connections.',

@@ -8,6 +8,15 @@ export interface IdeaSummary {
   scoreReasoning?: string
 }
 
+export interface WhyNow {
+  timing: string
+  marketForces: string[]
+  enablingTechnology: string[]
+  culturalShift: string[]
+  score?: number
+  scoreReasoning?: string
+}
+
 export interface ProblemClarity {
   problemStatement: string
   severity: 'critical' | 'moderate' | 'low'
@@ -102,6 +111,7 @@ export type Verdict = 'pass' | 'fail' | 'needs-work'
 
 export interface ValidationReport {
   ideaSummary: IdeaSummary
+  whyNow: WhyNow
   problemClarity: ProblemClarity
   targetAudience: TargetAudience
   marketInsight: MarketInsight
@@ -116,6 +126,7 @@ export interface ValidationReport {
 
 export const validationSectionOrder = [
   'ideaSummary',
+  'whyNow',
   'problemClarity',
   'targetAudience',
   'marketInsight',

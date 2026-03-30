@@ -784,19 +784,25 @@ function mergePhaseResults(
     verdict = strategic.data.verdict
   }
 
-  const report: ValidationReport = {
-    ideaSummary: strategic.data.ideaSummary,
-    problemClarity: structural.data.problemClarity,
-    targetAudience: structural.data.targetAudience,
-    marketInsight: structural.data.marketInsight,
-    competition: strategic.data.competition,
-    positioning: strategic.data.positioning,
-    mvpScope: strategic.data.mvpScope,
-    monetization: structural.data.monetization,
-    risks: structural.data.risks,
-    score: overallScore,
-    verdict,
-  };
+const report: ValidationReport = {
+      ideaSummary: strategic.data.ideaSummary,
+      whyNow: {
+        timing: 'Market timing assessment pending',
+        marketForces: [],
+        enablingTechnology: [],
+        culturalShift: []
+      },
+      problemClarity: structural.data.problemClarity,
+      targetAudience: structural.data.targetAudience,
+      marketInsight: structural.data.marketInsight,
+      competition: strategic.data.competition,
+      positioning: strategic.data.positioning,
+      mvpScope: strategic.data.mvpScope,
+      monetization: structural.data.monetization,
+      risks: structural.data.risks,
+      score: overallScore,
+      verdict,
+    };
 
   const result: ValidationResult = {
     ...report,
