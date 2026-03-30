@@ -487,8 +487,8 @@ function ResultPageContent() {
 					</div>
 
             <div className="flex flex-col items-center gap-4 rounded-[calc(var(--radius)+0.25rem)] border border-slate-200/80 bg-slate-50/80 px-6 py-5">
-              <div className="relative h-36 w-36">
-                <svg aria-hidden="true" className="h-36 w-36 -rotate-90" viewBox="0 0 100 100">
+      <div className="relative h-36 w-36">
+        <svg aria-label="Score gauge showing overall validation confidence" className="h-36 w-36 -rotate-90" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r={SCORE_RADIUS} fill="none" stroke="#e5e7eb" strokeWidth="8" />
                   <circle
                     cx="50"

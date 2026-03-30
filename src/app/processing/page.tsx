@@ -203,15 +203,15 @@ export default function ProcessingPage() {
               </p>
             </div>
             <div className="flex shrink-0 justify-center md:justify-end">
-              <div className="rounded-lg border border-border/80 bg-slate-50/80 px-5 py-4" aria-live="polite">
-                <StreamingScore value={score} status={isStreaming ? 'Streaming' : 'Ready'} />
-              </div>
+      <div className="rounded-lg border border-border/80 bg-slate-50/80 px-5 py-4" aria-live="polite" aria-atomic="true">
+        <StreamingScore value={score} status={isStreaming ? 'Streaming' : 'Ready'} />
+      </div>
             </div>
           </CardContent>
         </Card>
 
         {error ? (
-          <div className="space-y-4">
+          <div className="space-y-4" role="alert">
             <ErrorDisplay message={error} variant="network" onRetry={() => {
               setSections({})
               setScore(0)
@@ -220,14 +220,14 @@ export default function ProcessingPage() {
             }} />
           </div>
         ) : (
-<div aria-live="polite">
-              <ProcessingTimeline
-                currentPhase={currentPhase}
-                sections={sections}
-                activeSection={activeSection}
-                activityMessages={activityMessages}
-              />
-            </div>
+          <output aria-live="polite" className="block" aria-label="Analysis progress">
+            <ProcessingTimeline
+              currentPhase={currentPhase}
+              sections={sections}
+              activeSection={activeSection}
+              activityMessages={activityMessages}
+            />
+          </output>
         )}
 
         {finalVerdict && (
