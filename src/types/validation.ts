@@ -196,6 +196,11 @@ export type StreamAnalyzeEvent =
       phase: 'RESEARCH' | 'STRUCTURAL' | 'STRATEGIC'
       status: 'starting' | 'active' | 'complete'
     }
+  | {
+      type: 'sectionScore'
+      section: string
+      score: number
+    }
 
 export interface APIError {
   code: string
