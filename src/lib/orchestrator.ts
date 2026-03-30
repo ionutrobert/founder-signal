@@ -14,13 +14,6 @@ const SECTION_WEIGHTS: Record<string, number> = {
   risks: 0.10,
 }
 
-/**
- * Safely get section weight with fallback
- */
-function safeWeight(section: string): number {
-  return SECTION_WEIGHTS[section] ?? 0
-}
-
 function calculateScoreFromVerdict(verdict: 'pass' | 'fail' | 'needs-work'): number {
   switch (verdict) {
     case 'pass':
@@ -32,34 +25,18 @@ function calculateScoreFromVerdict(verdict: 'pass' | 'fail' | 'needs-work'): num
   }
 }
 
-function calculateSectionScoresFromStrategic(
-  _strategicScore: number,
-  verdict: 'pass' | 'fail' | 'needs-work'
+function extractSectionScoresFromData(
+  data: Record<string, unknown>,
+  weights: Record<string, number>
 ): SectionScore[] {
-  const baseSectionScore = calculateScoreFromVerdict(verdict)
-  const variance = 15
-
-  return [
-    { section: 'ideaSummary', score: Math.min(100, baseSectionScore + variance), weight: safeWeight('ideaSummary') },
-    { section: 'competition', score: Math.min(100, baseSectionScore + 5), weight: safeWeight('competition') },
-    { section: 'positioning', score: baseSectionScore, weight: safeWeight('positioning') },
-    { section: 'mvpScope', score: Math.min(100, baseSectionScore + 10), weight: safeWeight('mvpScope') },
-  ]
-}
-
-function calculateStructuralSectionScores(
-  verdict: 'pass' | 'fail' | 'needs-work'
-): SectionScore[] {
-  const baseSectionScore = calculateScoreFromVerdict(verdict)
-  const variance = 10
-
-  return [
-    { section: 'problemClarity', score: Math.min(100, baseSectionScore + variance), weight: safeWeight('problemClarity') },
-    { section: 'targetAudience', score: baseSectionScore, weight: safeWeight('targetAudience') },
-    { section: 'marketInsight', score: Math.min(100, baseSectionScore + 5), weight: safeWeight('marketInsight') },
-    { section: 'monetization', score: Math.max(0, baseSectionScore - 5), weight: safeWeight('monetization') },
-    { section: 'risks', score: Math.max(0, baseSectionScore - 15), weight: safeWeight('risks') },
-  ]
+  const scores: SectionScore[] = []
+  for (const [section, weight] of Object.entries(weights)) {
+    const sectionData = data[section] as { score?: number } | undefined
+    if (sectionData && typeof sectionData.score === 'number') {
+      scores.push({ section, score: sectionData.score, weight })
+    }
+  }
+  return scores
 }
 
 import {
@@ -478,8 +455,14 @@ export async function executeStructuralPhase(
 
     const duration = Date.now() - startTime;
 
-    const structuralVerdict = 'needs-work'
-    const structuralSectionScores = calculateStructuralSectionScores(structuralVerdict)
+    const structuralSectionScores = extractSectionScoresFromData(
+      parsed as unknown as Record<string, unknown>,
+      SECTION_WEIGHTS
+    )
+
+    if (structuralSectionScores.length === 0) {
+      console.warn('[orchestrator] STRUCTURAL: No AI scores found, using fallback')
+    }
 
     const result: PhaseResult & { data: StructuralResult } = {
       phase,
@@ -666,7 +649,14 @@ export async function executeStrategicPhase(
 
     const duration = Date.now() - startTime;
 
-    const strategicSectionScores = calculateSectionScoresFromStrategic(parsed.score, parsed.verdict)
+    const strategicSectionScores = extractSectionScoresFromData(
+      parsed as unknown as Record<string, unknown>,
+      SECTION_WEIGHTS
+    )
+
+    if (strategicSectionScores.length === 0) {
+      console.warn('[orchestrator] STRATEGIC: No AI scores found, using fallback')
+    }
 
     const result: PhaseResult & { data: StrategicResult } = {
       phase,
@@ -767,16 +757,32 @@ function mergePhaseResults(
   structural: PhaseResult & { data: StructuralResult },
   strategic: PhaseResult & { data: StrategicResult }
 ): ValidationResult {
+  const structuralScores = extractSectionScoresFromData(
+    structural.data as unknown as Record<string, unknown>,
+    SECTION_WEIGHTS
+  )
+  const strategicScores = extractSectionScoresFromData(
+    strategic.data as unknown as Record<string, unknown>,
+    SECTION_WEIGHTS
+  )
+
   const allSectionScores: SectionScore[] = [
-    ...structural.sectionScores,
-    ...strategic.sectionScores,
+    ...structuralScores,
+    ...strategicScores,
   ]
 
-  const totalWeight = allSectionScores.reduce((sum, s) => sum + s.weight, 0)
-  const weightedSum = allSectionScores.reduce((sum, s) => sum + s.score * s.weight, 0)
-  const overallScore = Math.round(weightedSum / totalWeight)
+  let overallScore: number
+  let verdict: 'pass' | 'fail' | 'needs-work'
 
-  const verdict = determineVerdict(overallScore);
+  if (allSectionScores.length > 0) {
+    const totalWeight = allSectionScores.reduce((sum, s) => sum + s.weight, 0)
+    const weightedSum = allSectionScores.reduce((sum, s) => sum + s.score * s.weight, 0)
+    overallScore = Math.round(weightedSum / totalWeight)
+    verdict = determineVerdict(overallScore)
+  } else {
+    overallScore = strategic.data.score ?? calculateScoreFromVerdict(strategic.data.verdict)
+    verdict = strategic.data.verdict
+  }
 
   const report: ValidationReport = {
     ideaSummary: strategic.data.ideaSummary,
