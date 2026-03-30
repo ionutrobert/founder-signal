@@ -56,26 +56,28 @@ export function ShareButtons({ resultId, title }: ShareButtonsProps) {
 
   return (
     <div className="flex gap-2">
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={handleCopyLink}
-        className="gap-1.5 min-h-11"
-      >
-        <Copy className="h-4 w-4" />
-        Copy Link
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={handleDownloadPDF}
-        className="gap-1.5 min-h-11"
-      >
-        <Download className="h-4 w-4" />
-        Download PDF
-      </Button>
+<Button
+          type="button"
+          variant="outline"
+          size="sm"
+          aria-label="Copy share link to clipboard"
+          onClick={handleCopyLink}
+          className="gap-1.5 min-h-11"
+        >
+          <Copy className="h-4 w-4" aria-hidden="true" />
+          Copy Link
+        </Button>
+<Button
+          type="button"
+          variant="outline"
+          size="sm"
+          aria-label="Download report as PDF"
+          onClick={handleDownloadPDF}
+          className="gap-1.5 min-h-11"
+        >
+          <Download className="h-4 w-4" aria-hidden="true" />
+          Download PDF
+        </Button>
     </div>
   )
 }

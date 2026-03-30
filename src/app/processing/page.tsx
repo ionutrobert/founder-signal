@@ -203,7 +203,7 @@ export default function ProcessingPage() {
               </p>
             </div>
             <div className="flex shrink-0 justify-center md:justify-end">
-              <div className="rounded-lg border border-border/80 bg-slate-50/80 px-5 py-4">
+              <div className="rounded-lg border border-border/80 bg-slate-50/80 px-5 py-4" aria-live="polite">
                 <StreamingScore value={score} status={isStreaming ? 'Streaming' : 'Ready'} />
               </div>
             </div>
@@ -220,12 +220,14 @@ export default function ProcessingPage() {
             }} />
           </div>
         ) : (
-          <ProcessingTimeline
-            currentPhase={currentPhase}
-            sections={sections}
-            activeSection={activeSection}
-            activityMessages={activityMessages}
-          />
+<div aria-live="polite">
+              <ProcessingTimeline
+                currentPhase={currentPhase}
+                sections={sections}
+                activeSection={activeSection}
+                activityMessages={activityMessages}
+              />
+            </div>
         )}
 
         {finalVerdict && (

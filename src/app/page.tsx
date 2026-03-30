@@ -249,27 +249,29 @@ export default function HomePage() {
                     <label htmlFor="idea" className="mb-2 block text-sm font-medium text-slate-700">
                       Describe your startup idea
                     </label>
-                    <Textarea
-                      id="idea"
-                      placeholder="A platform that helps freelancers find equity-based startup opportunities..."
-                      value={idea}
-                      onChange={(e) => setIdea(e.target.value)}
-                      className="min-h-32 border-slate-200 bg-white text-slate-900 placeholder:text-slate-400"
-                      disabled={isSubmitting}
-                    />
+<Textarea
+              id="idea"
+              aria-label="Startup idea description"
+              placeholder="A platform that helps freelancers find equity-based startup opportunities..."
+              value={idea}
+              onChange={(e) => setIdea(e.target.value)}
+              className="min-h-32 border-slate-200 bg-white text-slate-900 placeholder:text-slate-400"
+              disabled={isSubmitting}
+            />
                   </div>
 
                   {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
 
                   <div className="flex justify-center">
-                    <Button
-                      type="submit"
-                      size="lg"
-                      disabled={isSubmitting}
-                      className="min-w-48 bg-primary text-primary-foreground"
-                    >
-                      {isSubmitting ? 'Preparing live analysis...' : 'Analyze Idea'}
-                    </Button>
+<Button
+              type="submit"
+              size="lg"
+              aria-label="Analyze startup idea"
+              disabled={isSubmitting}
+              className="min-w-48 bg-primary text-primary-foreground"
+            >
+              {isSubmitting ? 'Preparing live analysis...' : 'Analyze Idea'}
+            </Button>
                   </div>
                 </form>
               </CardContent>
