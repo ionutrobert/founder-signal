@@ -90,11 +90,22 @@ function BulletList({ items, emptyLabel }: { items?: string[] | null; emptyLabel
   )
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+function Field({ label, value }: { label: string; value: unknown }) {
+  const displayValue = (() => {
+    if (value === null || value === undefined) return 'Not specified'
+    if (typeof value === 'string') return value
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+    if (typeof value === 'object') {
+      if ('assessment' in value && typeof value.assessment === 'string') return value.assessment
+      if ('value' in value) return String(value.value)
+      return JSON.stringify(value)
+    }
+    return String(value)
+  })()
   return (
     <div className="space-y-1">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="text-sm leading-6 text-slate-700">{value}</p>
+      <p className="text-sm leading-6 text-slate-700">{displayValue}</p>
     </div>
   )
 }

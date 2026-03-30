@@ -3,6 +3,8 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 
 import { cn } from '@/lib/utils'
+import { AuthProvider } from '@/contexts/auth-context'
+import ClientLayout from '@/components/client-layout'
 
 const geistSans = Geist({ subsets: ['latin'], display: 'swap', variable: '--font-sans' })
 const geistMono = Geist_Mono({ subsets: ['latin'], display: 'swap', variable: '--font-mono' })
@@ -43,7 +45,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn(geistSans.variable, geistMono.variable, 'font-sans')}>
       <body className="min-h-screen bg-background text-foreground antialiased">
-        {children}
+        <AuthProvider>
+          <ClientLayout>{children}</ClientLayout>
+        </AuthProvider>
       </body>
     </html>
   )

@@ -24,16 +24,53 @@ function validateVerdict(value: unknown): value is Verdict {
 
 function normalizeSection(section: Record<string, unknown>): Record<string, unknown> {
   if (typeof section !== 'object' || section === null) return section
+  
   if ('score' in section) {
-    section.score = validateScore(section.score)
+    if (typeof section.score === 'object' && section.score !== null) {
+      const scoreObj = section.score as Record<string, unknown>
+      section.score = validateScore(scoreObj.score ?? scoreObj.value)
+      if (scoreObj.reasoning && typeof scoreObj.reasoning === 'string') {
+        section.scoreReasoning = scoreObj.reasoning
+      }
+    } else {
+      section.score = validateScore(section.score)
+    }
+  }
+  if ('assessment' in section && typeof section.assessment === 'object') {
+    const assessment = section.assessment as Record<string, unknown>
+    if (assessment.score !== undefined) {
+      section.score = validateScore(assessment.score)
+    }
+    if (assessment.reasoning && typeof assessment.reasoning === 'string') {
+      section.scoreReasoning = assessment.reasoning
+    }
+    delete section.assessment
   }
   if ('summary' in section && typeof section.summary !== 'string') {
     delete section.summary
   }
   if ('scoreReasoning' in section && typeof section.scoreReasoning !== 'string') {
-    delete section.scoreReasoning
+    if (typeof section.scoreReasoning === 'object' && section.scoreReasoning !== null) {
+      const reasoningObj = section.scoreReasoning as Record<string, unknown>
+      section.scoreReasoning = typeof reasoningObj.reasoning === 'string' ? reasoningObj.reasoning : undefined
+    }
+    if (typeof section.scoreReasoning !== 'string') {
+      delete section.scoreReasoning
+    }
   }
   return section
+}
+
+function extractStringValue(value: unknown): string {
+  if (typeof value === 'string') return value
+  if (value === null || value === undefined) return ''
+  if (typeof value === 'object' && value !== null) {
+    const obj = value as Record<string, unknown>
+    if ('assessment' in obj && typeof obj.assessment === 'string') return obj.assessment
+    if ('value' in obj) return extractStringValue(obj.value)
+    return ''
+  }
+  return String(value)
 }
 
 function normalizeWhyNow(section: Record<string, unknown>): Record<string, unknown> {
@@ -48,7 +85,7 @@ function normalizeWhyNow(section: Record<string, unknown>): Record<string, unkno
     section.culturalShift = []
   }
   if (typeof section.timing !== 'string') {
-    section.timing = 'Market timing assessment pending'
+    section.timing = extractStringValue(section.timing) || 'Market timing assessment pending'
   }
   return section
 }

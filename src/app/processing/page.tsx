@@ -5,13 +5,11 @@ import { useRouter } from 'next/navigation'
 
 import { ErrorDisplay } from '@/components/error-display'
 import { StreamingScore } from '@/components/streaming-score'
-import { ProcessingTimeline } from '@/components/processing-timeline'
+import { PhaseAccordion } from '@/components/processing/phase-accordion'
 import { Card, CardContent } from '@/components/ui/card'
 import { streamAnalyzeIdea } from '@/lib/streaming-client'
 import type {
   StreamAnalyzeEvent,
-  ValidationSectionName,
-  ValidationSections,
   Verdict
 } from '@/types/validation'
 
@@ -25,9 +23,7 @@ export default function ProcessingPage() {
   const [idea, setIdea] = useState<string | null>(null)
   const [hasLoadedIdea, setHasLoadedIdea] = useState(false)
   const [score, setScore] = useState(0)
-  const [sections, setSections] = useState<Partial<ValidationSections>>({})
   const [currentPhase, setCurrentPhase] = useState<'research' | 'structural' | 'strategic' | 'complete'>('research')
-  const [activeSection, setActiveSection] = useState<ValidationSectionName | null>(null)
   const [activityMessages, setActivityMessages] = useState<string[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -47,13 +43,11 @@ export default function ProcessingPage() {
     if (!idea) return
 
     const controller = new AbortController()
-    setSections({})
     setScore(0)
     setError(null)
     setFinalVerdict(null)
     setActivityMessages([])
     setCurrentPhase('research')
-    setActiveSection(null)
     setIsStreaming(true)
 
     const handleEvent = (event: StreamAnalyzeEvent) => {
@@ -63,15 +57,6 @@ export default function ProcessingPage() {
 
       if (event.type === 'score') {
         setScore(event.value)
-        return
-      }
-
-      if (event.type === 'section') {
-        setSections((current) => ({
-          ...current,
-          [event.name]: event.data
-        }))
-        setActiveSection(event.name as ValidationSectionName)
         return
       }
 
@@ -102,14 +87,12 @@ export default function ProcessingPage() {
       }
 
       if (event.type === 'complete') {
-        setSections(event.data)
         setScore(event.data.score)
         setFinalVerdict(event.data.verdict)
         setCurrentPhase('complete')
         setIsStreaming(false)
         window.sessionStorage.removeItem(PENDING_IDEA_STORAGE_KEY)
 
-        // Store result in sessionStorage as fallback
         try {
           window.sessionStorage.setItem(ANALYSIS_RESULT_STORAGE_KEY, JSON.stringify(event.data))
         } catch {
@@ -135,17 +118,17 @@ export default function ProcessingPage() {
       signal: controller.signal,
       onEvent: handleEvent
     })
-      .catch((streamError) => {
-        if (controller.signal.aborted) return
-        const message = streamError instanceof Error ? streamError.message : 'Unable to stream the analysis.'
-        setError(message)
+    .catch((streamError) => {
+      if (controller.signal.aborted) return
+      const message = streamError instanceof Error ? streamError.message : 'Unable to stream the analysis.'
+      setError(message)
+      setIsStreaming(false)
+    })
+    .finally(() => {
+      if (!controller.signal.aborted) {
         setIsStreaming(false)
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) {
-          setIsStreaming(false)
-        }
-      })
+      }
+    })
 
     return () => {
       controller.abort()
@@ -162,11 +145,11 @@ export default function ProcessingPage() {
 
   if (!hasLoadedIdea) {
     return (
-      <main className="min-h-screen bg-transparent">
+      <main className="min-h-screen bg-gradient-to-b from-white via-slate-50 to-slate-100">
         <div className="mx-auto flex min-h-screen max-w-5xl items-center justify-center px-4 py-12">
-          <Card className="w-full max-w-lg border-border/80 bg-card/95 shadow-[var(--shadow-lifted)]">
-            <CardContent className="flex items-center gap-3 px-6 py-6 text-sm text-muted-foreground">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <Card className="w-full max-w-lg border-slate-200 bg-white shadow-lg">
+            <CardContent className="flex items-center gap-3 px-6 py-6 text-sm text-slate-600">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#E7EB5D] border-t-transparent" />
               Preparing your live validation workspace...
             </CardContent>
           </Card>
@@ -180,19 +163,19 @@ export default function ProcessingPage() {
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
           className="absolute -right-32 top-0 h-[32rem] w-[32rem] rounded-full blur-[100px]"
-          style={{ backgroundColor: 'rgb(var(--aurora-blue) / 0.18)' }}
+          style={{ backgroundColor: 'rgb(231 235 93 / 0.12)' }}
         />
         <div
           className="absolute left-0 top-24 h-[28rem] w-[28rem] rounded-full blur-[90px]"
-          style={{ backgroundColor: 'rgb(var(--aurora-indigo) / 0.14)' }}
+          style={{ backgroundColor: 'rgb(139 92 246 / 0.08)' }}
         />
       </div>
 
       <div className="relative mx-auto flex max-w-4xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
-        <Card className="border-border/80 bg-card/95 shadow-[var(--shadow-lifted)]">
+        <Card className="border-slate-200 bg-white shadow-lg">
           <CardContent className="flex flex-col gap-6 p-6 md:flex-row md:items-center md:justify-between">
             <div className="space-y-3">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#E7EB5D]">
                 Live Analysis
               </p>
               <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
@@ -203,9 +186,9 @@ export default function ProcessingPage() {
               </p>
             </div>
             <div className="flex shrink-0 justify-center md:justify-end">
-      <div className="rounded-lg border border-border/80 bg-slate-50/80 px-5 py-4" aria-live="polite" aria-atomic="true">
-        <StreamingScore value={score} status={isStreaming ? 'Streaming' : 'Ready'} />
-      </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-5 py-4" aria-live="polite" aria-atomic="true">
+                <StreamingScore value={score} status={isStreaming ? 'Streaming' : 'Ready'} />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -213,7 +196,6 @@ export default function ProcessingPage() {
         {error ? (
           <div className="space-y-4" role="alert">
             <ErrorDisplay message={error} variant="network" onRetry={() => {
-              setSections({})
               setScore(0)
               setError(null)
               window.location.reload()
@@ -221,17 +203,15 @@ export default function ProcessingPage() {
           </div>
         ) : (
           <output aria-live="polite" className="block" aria-label="Analysis progress">
-            <ProcessingTimeline
+            <PhaseAccordion
               currentPhase={currentPhase}
-              sections={sections}
-              activeSection={activeSection}
               activityMessages={activityMessages}
             />
           </output>
         )}
 
         {finalVerdict && (
-          <div className="text-center text-sm text-muted-foreground">
+          <div className="text-center text-sm text-slate-600">
             Analysis complete. Opening full report...
           </div>
         )}

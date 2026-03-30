@@ -1,24 +1,29 @@
 @import 'tailwindcss/tailwind.css';
 
 :root {
-  --background: 250 250 250;
-  --foreground: 17 24 39;
+  /* Primary - Lime Yellow */
+  --primary: 231 235 93; /* #E7EB5D */
+  --primary-foreground: 0 0 0; /* Black text */
+  --primary-light: 240 243 130; /* Lighter lime */
+  --primary-dark: 200 205 50; /* Darker lime */
+
+  /* Accent Colors */
+  --accent-purple: 139 92 246; /* #8B5CF6 - AI/Magic */
+  --accent-blue: 59 130 246; /* #3B82F6 - Trust/Tech */
+
+  /* Neutrals */
+  --background: 255 255 255;
+  --foreground: 15 23 42; /* Near black */
   --card: 255 255 255;
-  --card-foreground: 17 24 39;
-  --primary: 59 130 246;
-  --primary-foreground: 255 255 255;
-  --secondary: 241 245 249;
-  --secondary-foreground: 17 24 39;
+  --card-foreground: 15 23 42;
+  --secondary: 248 250 252;
+  --secondary-foreground: 15 23 42;
   --muted: 241 245 249;
-  --muted-foreground: 107 114 128;
-  --accent: 59 130 246;
-  --accent-foreground: 255 255 255;
-  --border: 229 231 235;
-  --input: 229 231 235;
-  --ring: 59 130 246;
-  --aurora-indigo: 99 102 241;
-  --aurora-pink: 236 72 153;
-  --aurora-blue: 59 130 246;
+  --muted-foreground: 71 85 105;
+  --border: 226 232 240;
+  --input: 226 232 240;
+  --ring: 231 235 93; /* Lime */
+
   --radius: 1rem;
   --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   --shadow-lifted: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
@@ -27,11 +32,11 @@
 body {
   min-height: 100vh;
   margin: 0;
-  background:
-    radial-gradient(ellipse 80% 60% at 15% 10%, rgb(var(--aurora-indigo) / 0.18) 0%, transparent 50%),
-    radial-gradient(ellipse 60% 50% at 85% 20%, rgb(var(--aurora-pink) / 0.14) 0%, transparent 45%),
-    radial-gradient(ellipse 50% 40% at 50% 80%, rgb(var(--aurora-blue) / 0.1) 0%, transparent 50%),
-    linear-gradient(180deg, rgb(255 255 255) 0%, rgb(248 250 252) 50%, rgb(241 245 249) 100%);
+  background: 
+    radial-gradient(ellipse 80% 60% at 15% 10%, rgb(var(--primary) / 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 50% at 85% 20%, rgb(var(--accent-purple) / 0.08) 0%, transparent 45%),
+    radial-gradient(ellipse 50% 40% at 50% 80%, rgb(var(--accent-blue) / 0.06) 0%, transparent 50%),
+    linear-gradient(180deg, rgb(255 255 255) 0%, rgb(251 252 253) 50%, rgb(248 250 252) 100%);
   color: rgb(var(--foreground));
   font-family: var(--font-sans), system-ui, sans-serif;
 }
