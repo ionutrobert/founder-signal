@@ -43,12 +43,12 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-white">
-      {/* Hero Section */}
+      {/* Hero Section - Full width with gradients */}
       <section className="relative pt-24 pb-0 overflow-hidden">
-        {/* Background with gradient orbs */}
+        {/* Full-width background with gradient orbs */}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100/50" />
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-violet-100/40 to-blue-100/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-br from-lime-100/30 to-emerald-100/20 rounded-full blur-3xl translate-y-1/4 -translate-x-1/4" />
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-violet-100/40 to-blue-100/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
+        <div className="absolute top-1/2 left-0 w-[600px] h-[600px] bg-gradient-to-br from-lime-100/30 to-emerald-100/20 rounded-full blur-3xl -translate-y-1/2 -translate-x-1/4" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Row 1: Two-column hero content */}
@@ -104,42 +104,44 @@ export default function HomePage() {
             </motion.div>
           </div>
 
-          {/* Row 2: Logo bar */}
+          {/* Row 2: Logo bar - contained within max-w */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}
-            className="flex items-center gap-4 sm:gap-8 py-10 lg:py-12 border-t border-slate-100 mt-8"
+            className="flex items-center gap-4 sm:gap-8 py-10 lg:py-12 border-t border-slate-100 mt-8 overflow-hidden"
           >
             <p className="text-sm text-slate-500 shrink-0 w-32 lg:w-40">
               Trusted by leading tech teams
             </p>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <LogoCarousel />
             </div>
           </motion.div>
+        </div>
 
-          {/* Row 3: Report Preview with background image */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
-            className="relative"
-          >
-            {/* Background image container */}
-            <div className="relative rounded-2xl overflow-hidden">
-              {/* Background image */}
-              <div 
-                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                style={{ backgroundImage: 'url(/hero-bg.jpg)' }}
-              />
-              {/* Overlay to darken image slightly */}
-              <div className="absolute inset-0 bg-slate-900/30" />
-              
-              {/* Report container with overflow hidden */}
-              <div className="relative overflow-hidden" style={{ maxHeight: '520px' }}>
-                {/* Report wrapper - light theme */}
-                <div className="relative mx-4 sm:mx-8 lg:mx-16 mt-8 mb-0 rounded-t-2xl overflow-hidden bg-white shadow-2xl">
+        {/* Row 3: Report Preview with full-width background image */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          className="relative mt-8"
+        >
+          {/* Full-width background image container - no border radius */}
+          <div className="relative overflow-hidden" style={{ height: '600px' }}>
+            {/* Background image - full width, no border radius */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+              style={{ backgroundImage: 'url(/hero-bg.jpg)' }}
+            />
+            {/* Overlay to darken image slightly */}
+            <div className="absolute inset-0 bg-slate-900/20" />
+            
+            {/* Report mockup - contained and centered */}
+            <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="relative h-full overflow-hidden">
+                {/* Report wrapper - light theme, contained width */}
+                <div className="relative mx-auto max-w-4xl mt-8 mb-0 rounded-t-2xl overflow-hidden bg-white shadow-2xl">
                   {/* Decorative top gradient */}
                   <div className="absolute inset-0 bg-gradient-to-br from-violet-50/50 via-white to-blue-50/30 pointer-events-none" />
                   
@@ -285,8 +287,8 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       </section>
 
       {/* Form Section */}
