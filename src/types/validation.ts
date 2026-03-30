@@ -4,6 +4,8 @@ export interface IdeaSummary {
   category: string
   problemTheme: string
   tractionEvidence: string[]
+  score?: number
+  scoreReasoning?: string
 }
 
 export interface ProblemClarity {
@@ -12,6 +14,8 @@ export interface ProblemClarity {
   affectedUsers: string
   evidence: string[]
   confidenceLevel: string
+  score?: number
+  scoreReasoning?: string
 }
 
 export interface PersonaProfile {
@@ -25,6 +29,8 @@ export interface TargetAudience {
   icp: string
   keySegments: string[]
   personas: PersonaProfile[]
+  score?: number
+  scoreReasoning?: string
 }
 
 export interface MarketInsight {
@@ -33,6 +39,8 @@ export interface MarketInsight {
   som: string
   trends: string[]
   growthSignals: string[]
+  score?: number
+  scoreReasoning?: string
 }
 
 export interface CompetitorProfile {
@@ -46,6 +54,8 @@ export interface Competition {
   directCompetitors: CompetitorProfile[]
   indirectCompetitors: CompetitorProfile[]
   competitiveAdvantage: string
+  score?: number
+  scoreReasoning?: string
 }
 
 export interface Positioning {
@@ -53,6 +63,8 @@ export interface Positioning {
   differentiators: string[]
   messagingPillars: string[]
   brandPromise: string
+  score?: number
+  scoreReasoning?: string
 }
 
 export interface MVPScope {
@@ -61,6 +73,8 @@ export interface MVPScope {
   successMetrics: string[]
   resourceNeeds: string[]
   deferredCapabilities: string[]
+  score?: number
+  scoreReasoning?: string
 }
 
 export interface Monetization {
@@ -69,6 +83,8 @@ export interface Monetization {
   salesChannels: string[]
   projections: string
   keyAssumptions: string[]
+  score?: number
+  scoreReasoning?: string
 }
 
 export interface Risks {
@@ -76,6 +92,8 @@ export interface Risks {
   market: string[]
   operational: string[]
   regulatory: string[]
+  score?: number
+  scoreReasoning?: string
 }
 
 export type Score = number
