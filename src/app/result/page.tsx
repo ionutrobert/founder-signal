@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ReportTabs } from '@/components/report-tabs'
+import { ScoreTooltip } from '@/components/score-tooltip'
 import { SimplifiedReport } from '@/components/simplified-report'
 import type {
   CompetitorProfile,
@@ -448,7 +449,14 @@ technicalContent={(
 getStrengthClass(getSectionStrength('ideaSummary', report.phases))
 )}>
 <CardHeader className="pb-3">
-<CardTitle className="text-lg text-slate-900">Idea Summary</CardTitle>
+<CardTitle className="flex items-center text-lg text-slate-900">
+Idea Summary
+<ScoreTooltip
+score={report.ideaSummary?.score}
+reasoning={report.ideaSummary?.scoreReasoning}
+strength={getSectionStrength('ideaSummary', report.phases)}
+/>
+</CardTitle>
 <CardDescription className="text-slate-600">Core framing for the concept under review.</CardDescription>
 </CardHeader>
 <CardContent className="space-y-5">
@@ -468,7 +476,14 @@ getStrengthClass(getSectionStrength('ideaSummary', report.phases))
 getStrengthClass(getSectionStrength('problemClarity', report.phases))
 )}>
 <CardHeader className="pb-3">
-<CardTitle className="text-lg text-slate-900">Problem Clarity</CardTitle>
+<CardTitle className="flex items-center text-lg text-slate-900">
+Problem Clarity
+<ScoreTooltip
+score={report.problemClarity?.score}
+reasoning={report.problemClarity?.scoreReasoning}
+strength={getSectionStrength('problemClarity', report.phases)}
+/>
+</CardTitle>
 <CardDescription className="text-slate-600">How clearly the problem is framed and evidenced.</CardDescription>
 </CardHeader>
 <CardContent className="space-y-5">
@@ -488,7 +503,14 @@ getStrengthClass(getSectionStrength('problemClarity', report.phases))
 getStrengthClass(getSectionStrength('targetAudience', report.phases))
 )}>
 <CardHeader className="pb-3">
-<CardTitle className="text-lg text-slate-900">Target Audience</CardTitle>
+<CardTitle className="flex items-center text-lg text-slate-900">
+Target Audience
+<ScoreTooltip
+score={report.targetAudience?.score}
+reasoning={report.targetAudience?.scoreReasoning}
+strength={getSectionStrength('targetAudience', report.phases)}
+/>
+</CardTitle>
 <CardDescription className="text-slate-600">Who the product serves and why they care.</CardDescription>
 </CardHeader>
 <CardContent className="space-y-5">
@@ -509,7 +531,14 @@ getStrengthClass(getSectionStrength('targetAudience', report.phases))
 getStrengthClass(getSectionStrength('marketInsight', report.phases))
 )}>
 <CardHeader className="pb-3">
-<CardTitle className="text-lg text-slate-900">Market Insight</CardTitle>
+<CardTitle className="flex items-center text-lg text-slate-900">
+Market Insight
+<ScoreTooltip
+score={report.marketInsight?.score}
+reasoning={report.marketInsight?.scoreReasoning}
+strength={getSectionStrength('marketInsight', report.phases)}
+/>
+</CardTitle>
 <CardDescription className="text-slate-600">Market sizing, momentum, and directional signals.</CardDescription>
 </CardHeader>
 <CardContent className="space-y-5">
@@ -534,7 +563,14 @@ getStrengthClass(getSectionStrength('marketInsight', report.phases))
 getStrengthClass(getSectionStrength('competition', report.phases))
 )}>
 <CardHeader className="pb-3">
-<CardTitle className="text-lg text-slate-900">Competition</CardTitle>
+<CardTitle className="flex items-center text-lg text-slate-900">
+Competition
+<ScoreTooltip
+score={report.competition?.score}
+reasoning={report.competition?.scoreReasoning}
+strength={getSectionStrength('competition', report.phases)}
+/>
+</CardTitle>
 <CardDescription className="text-slate-600">Where the idea stands against alternatives in the market.</CardDescription>
 </CardHeader>
 <CardContent className="space-y-6">
@@ -557,7 +593,14 @@ emptyLabel="No indirect competitors listed."
 getStrengthClass(getSectionStrength('positioning', report.phases))
 )}>
 <CardHeader className="pb-3">
-<CardTitle className="text-lg text-slate-900">Positioning</CardTitle>
+<CardTitle className="flex items-center text-lg text-slate-900">
+Positioning
+<ScoreTooltip
+score={report.positioning?.score}
+reasoning={report.positioning?.scoreReasoning}
+strength={getSectionStrength('positioning', report.phases)}
+/>
+</CardTitle>
 <CardDescription className="text-slate-600">How the business should show up in the market.</CardDescription>
 </CardHeader>
 <CardContent className="space-y-5">
@@ -579,9 +622,16 @@ getStrengthClass(getSectionStrength('positioning', report.phases))
 getStrengthClass(getSectionStrength('mvpScope', report.phases))
 )}>
 <CardHeader className="pb-3">
-<CardTitle className="text-lg text-slate-900">MVP Scope</CardTitle>
+<CardTitle className="flex items-center text-lg text-slate-900">
+MVP Scope
+<ScoreTooltip
+score={report.mvpScope?.score}
+reasoning={report.mvpScope?.scoreReasoning}
+strength={getSectionStrength('mvpScope', report.phases)}
+/>
+</CardTitle>
 <CardDescription className="text-slate-600">What to build first and how to measure traction.</CardDescription>
-            </CardHeader>
+</CardHeader>
             <CardContent className="space-y-5">
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Core Features</p>
@@ -608,7 +658,14 @@ getStrengthClass(getSectionStrength('mvpScope', report.phases))
 getStrengthClass(getSectionStrength('monetization', report.phases))
 )}>
 <CardHeader className="pb-3">
-<CardTitle className="text-lg text-slate-900">Monetization</CardTitle>
+<CardTitle className="flex items-center text-lg text-slate-900">
+Monetization
+<ScoreTooltip
+score={report.monetization?.score}
+reasoning={report.monetization?.scoreReasoning}
+strength={getSectionStrength('monetization', report.phases)}
+/>
+</CardTitle>
 <CardDescription className="text-slate-600">Revenue logic, pricing, and go-to-market assumptions.</CardDescription>
 </CardHeader>
 <CardContent className="space-y-5">
@@ -631,7 +688,14 @@ getStrengthClass(getSectionStrength('monetization', report.phases))
 getStrengthClass(getSectionStrength('risks', report.phases))
 )}>
 <CardHeader className="pb-3">
-<CardTitle className="text-lg text-slate-900">Risks</CardTitle>
+<CardTitle className="flex items-center text-lg text-slate-900">
+Risks
+<ScoreTooltip
+score={report.risks?.score}
+reasoning={report.risks?.scoreReasoning}
+strength={getSectionStrength('risks', report.phases)}
+/>
+</CardTitle>
 <CardDescription className="text-slate-600">Operational, technical, and market risks to manage early.</CardDescription>
 </CardHeader>
 <CardContent className="space-y-4">
