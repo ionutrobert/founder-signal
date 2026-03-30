@@ -31,6 +31,10 @@ function getDefaultKeyGenerator(request: NextRequest): string {
   return `ratelimit:${apiKey}`
 }
 
+function getKeyWithUserId(userId: string): string {
+  return `ratelimit:user:${userId}`
+}
+
 export function rateLimit(config: RateLimitConfig) {
   const {
     windowMs = 60000,
@@ -39,11 +43,12 @@ export function rateLimit(config: RateLimitConfig) {
   } = config
 
   return async function rateLimitMiddleware(
-    request: NextRequest
+    request: NextRequest,
+    userId?: string
   ): Promise<{ success: true } | { success: false; response: NextResponse }> {
     cleanupExpiredEntries()
 
-    const key = keyGenerator(request)
+    const key = userId ? getKeyWithUserId(userId) : keyGenerator(request)
     const now = Date.now()
     const entry = rateLimitStore.get(key)
 
