@@ -149,24 +149,26 @@ export default function HomePage() {
             </p>
 
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-              <Button
-                type="button"
-                size="lg"
-                onClick={scrollToValidate}
-                className="bg-primary px-7 text-primary-foreground shadow-[var(--shadow-lifted)]"
-              >
-                Validate Your Idea
-              </Button>
-              <Link
-                href="/sample"
-                className={buttonVariants({
-                  variant: 'outline',
-                  size: 'lg',
-                  className: 'border-slate-200 bg-white/80 px-7 text-slate-700 shadow-none backdrop-blur-sm'
-                })}
-              >
-                See Sample Report
-              </Link>
+            <Button
+              type="button"
+              size="lg"
+              onClick={scrollToValidate}
+              aria-label="Scroll to validate your idea form"
+              className="min-h-11 bg-primary px-7 text-primary-foreground shadow-[var(--shadow-lifted)]"
+            >
+              Validate Your Idea
+            </Button>
+            <Link
+              href="/sample"
+              aria-label="View sample validation report"
+              className={buttonVariants({
+                variant: 'outline',
+                size: 'lg',
+                className: 'min-h-11 border-slate-200 bg-white/80 px-7 text-slate-700 shadow-none backdrop-blur-sm'
+              })}
+            >
+              See Sample Report
+            </Link>
             </div>
 
             <p className="mt-4 text-sm text-slate-500">
@@ -263,15 +265,16 @@ export default function HomePage() {
                   {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
 
                   <div className="flex justify-center">
-<Button
-              type="submit"
-              size="lg"
-              aria-label="Analyze startup idea"
-              disabled={isSubmitting}
-              className="min-w-48 bg-primary text-primary-foreground"
-            >
-              {isSubmitting ? 'Preparing live analysis...' : 'Analyze Idea'}
-            </Button>
+        <Button
+          type="submit"
+          size="lg"
+          aria-label="Analyze startup idea"
+          aria-busy={isSubmitting}
+          disabled={isSubmitting}
+          className="min-h-11 min-w-48 bg-primary text-primary-foreground"
+        >
+          {isSubmitting ? 'Preparing live analysis...' : 'Analyze Idea'}
+        </Button>
                   </div>
                 </form>
               </CardContent>
