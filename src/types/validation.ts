@@ -71,6 +71,8 @@ export interface Competition {
   directCompetitors: CompetitorProfile[]
   indirectCompetitors: CompetitorProfile[]
   competitiveAdvantage: string
+  marketShareEstimate?: string
+  competitiveIntensity?: 'low' | 'medium' | 'high'
   summary?: string
   score?: number
   scoreReasoning?: string
