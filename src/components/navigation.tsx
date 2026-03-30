@@ -13,18 +13,6 @@ const navLinks = [
   { href: "#api", label: "API" },
 ]
 
-function NavLink({ href, label }: { href: string; label: string }) {
-  return (
-    <a
-      href={href}
-      className="relative text-sm font-medium text-slate-700 transition-colors duration-200 hover:text-slate-900 group"
-    >
-      {label}
-      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#E7EB5D] transition-all duration-300 group-hover:w-full" />
-    </a>
-  )
-}
-
 export default function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -49,54 +37,43 @@ export default function Navigation() {
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <nav className="flex h-16 items-center justify-between">
-          <a href="/" className="flex items-center gap-2 group">
+          {/* Logo + Tagline - LEFT */}
+          <a href="/" className="flex items-center gap-3 group">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E7EB5D] shadow-sm">
               <Signal className="h-5 w-5 text-slate-900" />
             </div>
-            <span className="text-lg font-semibold text-slate-900">
-              Founder Signal
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-semibold text-slate-900">
+                Founder Signal
+              </span>
+              <span className="hidden sm:inline text-sm text-slate-500">
+                Validate before you build
+              </span>
+            </div>
           </a>
 
-          <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <NavLink key={link.href} {...link} />
-            ))}
-          </div>
-
-          <div className="hidden md:flex items-center gap-3">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="min-h-10 text-slate-700 hover:text-slate-900 hover:bg-slate-100"
-              onClick={() => openAuthDrawer('login')}
-            >
-              Sign In
-            </Button>
+          {/* CTA + Menu - RIGHT */}
+          <div className="flex items-center gap-3">
             <Button
               size="sm"
               onClick={() => openAuthDrawer('signup')}
               className="min-h-10 bg-[#E7EB5D] hover:bg-[#D4D854] text-slate-900 font-medium shadow-sm"
             >
               Start Free
-              <Badge variant="secondary" className="ml-2 bg-slate-900 text-white text-[10px] px-1.5 py-0 h-5">
-                FREE
-              </Badge>
             </Button>
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 hover:bg-slate-100 transition-colors"
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </button>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 hover:bg-slate-100 transition-colors"
-            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
-          >
-            {isMobileMenuOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
-          </button>
         </nav>
 
         {isMobileMenuOpen && (

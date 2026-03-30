@@ -13,7 +13,8 @@ import { StatsGrid } from '@/components/shadcnspace'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import HeroReportPreview from '@/components/hero-report-preview'
+import { SocialProofBadge } from '@/components/social-proof-badge'
+import { ScoreGauge } from '@/components/score-gauge'
 
 const PENDING_IDEA_STORAGE_KEY = 'founder-signal:pending-idea'
 
@@ -100,6 +101,7 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen overflow-x-clip bg-transparent">
+      {/* Background gradients */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
           className="absolute -right-40 -top-40 h-[50rem] w-[50rem] rounded-full blur-[100px]"
@@ -115,76 +117,86 @@ export default function HomePage() {
         />
       </div>
 
-      <div className="relative z-10 container mx-auto px-4 py-16 md:py-24">
-        <section className="mx-auto mb-16 flex max-w-5xl flex-col items-start lg:flex-row lg:items-center lg:gap-12">
-          <div className="flex-1">
-            <div className="mt-8 max-w-4xl">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm"
-              >
-                Idea validation for founders moving fast
-              </motion.div>
+      <div className="relative z-10 container mx-auto px-4 pt-32 pb-16 md:pt-40 md:pb-24">
+        {/* Hero Section - Two Column Layout */}
+        <section className="mx-auto mb-16 flex max-w-6xl flex-col items-center lg:flex-row lg:items-center lg:gap-16">
+          {/* Left Column - Content */}
+          <div className="flex-1 max-w-2xl">
+            {/* Social Proof Badge */}
+            <SocialProofBadge />
 
-              <motion.h1
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="mt-6 max-w-3xl text-5xl font-bold tracking-tight text-slate-900 sm:text-6xl md:text-7xl"
-              >
-                Stop Building Things Nobody Wants
-              </motion.h1>
+            {/* Headline with italic emphasis */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="mt-8"
+            >
+              <h1 className="text-5xl font-bold tracking-tight text-slate-900 sm:text-6xl lg:text-7xl leading-[1.1]">
+                <span className="italic font-serif">Validate</span> Your Startup Idea
+              </h1>
+              <h1 className="text-5xl font-bold tracking-tight text-slate-900 sm:text-6xl lg:text-7xl leading-[1.1] mt-2">
+                Before You <span className="italic font-serif">Build</span>
+              </h1>
+            </motion.div>
 
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="mt-6 max-w-2xl text-lg leading-8 text-slate-600 md:text-xl"
-              >
-                Founder Signal helps you pressure-test an idea before you sink weeks into code, hiring, or
-                positioning. Describe the problem, audience, and wedge in plain English. We surface demand
-                signals, blind spots, and the next validation steps that actually matter.
-              </motion.p>
+            {/* Subtitle */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="mt-6 max-w-xl text-lg leading-8 text-slate-600 md:text-xl"
+            >
+              AI-powered validation that surfaces demand signals, blind spots, and next moves 
+              for your startup idea. Get an analyst-grade evaluation in seconds.
+            </motion.p>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="mt-10 flex flex-col gap-3 sm:flex-row"
+            {/* CTAs */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+              className="mt-10 flex flex-col gap-3 sm:flex-row"
+            >
+              <Button
+                type="button"
+                size="lg"
+                onClick={scrollToValidate}
+                className="min-h-12 bg-[#E7EB5D] hover:bg-[#D4D854] text-slate-900 font-medium px-8 shadow-sm transition-colors duration-200"
               >
-                <Button
-                  type="button"
-                  size="lg"
-                  onClick={scrollToValidate}
-                  aria-label="Scroll to validate your idea form"
-                  className="min-h-11 bg-[#E7EB5D] hover:bg-[#D4D854] text-slate-900 font-medium px-7 shadow-sm"
-                >
-                  Validate Your Idea
-                </Button>
-                <Link
-                  href="/sample"
-                  aria-label="View sample validation report"
-                  className={buttonVariants({
-                    variant: 'outline',
-                    size: 'lg',
-                    className: 'min-h-11 border-slate-200 bg-white px-7 text-slate-700 hover:bg-slate-50'
-                  })}
-                >
-                  See Sample Report
-                </Link>
-              </motion.div>
-            </div>
+                Analyze Idea
+              </Button>
+              <Link
+                href="/sample"
+                className={buttonVariants({
+                  variant: 'outline',
+                  size: 'lg',
+                  className: 'min-h-12 border-slate-200 bg-white px-8 text-slate-700 hover:bg-slate-50 transition-colors duration-200'
+                })}
+              >
+                See Sample Report
+              </Link>
+            </motion.div>
           </div>
 
+          {/* Right Column - Report Preview with Score Gauge */}
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, delay: 0.5 }}
-            className="hidden lg:block mt-12 lg:mt-0"
+            initial={{ opacity: 0, x: 30, scale: 0.95 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+            className="mt-16 lg:mt-0 flex-1 flex flex-col items-center"
           >
-            <HeroReportPreview />
+            <Card className="border-slate-200 bg-white shadow-xl p-8 max-w-md w-full">
+              <div className="flex flex-col items-center">
+                <h3 className="text-lg font-semibold text-slate-900 mb-6">Validation Score</h3>
+                <ScoreGauge score={87} size={220} duration={2500} />
+              </div>
+            </Card>
+            
+            {/* Logo Carousel */}
+            <div className="mt-12 w-full">
+              <LogoCarousel />
+            </div>
           </motion.div>
         </section>
 
