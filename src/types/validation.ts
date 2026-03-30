@@ -52,6 +52,9 @@ export interface MarketInsight {
   som: string
   trends: string[]
   growthSignals: string[]
+  marketGrowthRate?: string
+  marketMaturity?: 'emerging' | 'growing' | 'mature' | 'declining'
+  keyMetrics?: { name: string; value: string; trend: 'up' | 'down' | 'stable' }[]
   summary?: string
   score?: number
   scoreReasoning?: string
