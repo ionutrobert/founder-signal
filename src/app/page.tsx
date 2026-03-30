@@ -118,18 +118,20 @@ export default function HomePage() {
               <LogoCarousel />
             </div>
           </motion.div>
-        </div>
+      </div>
 
-        {/* Row 3: Report Preview with full-width background image */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-          className="relative mt-8"
-        >
-          {/* Full-width background image container - no border radius */}
+      {/* Row 3: Report Preview with contained background image */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4, duration: 0.5 }}
+        className="relative mt-8"
+      >
+        {/* Contained layout */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Background image container - contained, no border radius */}
           <div className="relative overflow-hidden" style={{ height: '600px' }}>
-            {/* Background image - full width, no border radius */}
+            {/* Background image - contained, no border radius */}
             <div 
               className="absolute inset-0 bg-cover bg-center bg-no-repeat"
               style={{ backgroundImage: 'url(/hero-bg.jpg)' }}
@@ -137,11 +139,10 @@ export default function HomePage() {
             {/* Overlay to darken image slightly */}
             <div className="absolute inset-0 bg-slate-900/20" />
             
-            {/* Report mockup - contained and centered */}
-            <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="relative h-full overflow-hidden">
-                {/* Report wrapper - light theme, contained width */}
-                <div className="relative mx-auto max-w-4xl mt-8 mb-0 rounded-t-2xl overflow-hidden bg-white shadow-2xl">
+            {/* Report mockup */}
+            <div className="relative h-full overflow-hidden">
+              {/* Report wrapper - light theme */}
+              <div className="relative mx-auto max-w-4xl mt-8 mb-0 rounded-t-2xl overflow-hidden bg-white shadow-2xl">
                   {/* Decorative top gradient */}
                   <div className="absolute inset-0 bg-gradient-to-br from-violet-50/50 via-white to-blue-50/30 pointer-events-none" />
                   
