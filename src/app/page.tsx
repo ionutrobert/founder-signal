@@ -3,10 +3,13 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 import { BarChart3, FileText, Sparkles } from 'lucide-react'
 
 import { LogoCarousel } from '@/components/logo-carousel'
 import { RecentAnalyses } from '@/components/recent-analyses'
+import { ScrollReveal } from '@/components/animations'
+import { StatsGrid } from '@/components/shadcnspace'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
@@ -81,6 +84,13 @@ const reportAreas = [
   }
 ]
 
+const stats = [
+  { value: 11, label: 'Validation Dimensions', suffix: '' },
+  { value: 30, label: 'Seconds to First Insights', suffix: 's' },
+  { value: 95, label: 'Accuracy Rate', suffix: '%' },
+  { value: 1000, label: 'Ideas Validated', suffix: '+' },
+]
+
 export default function HomePage() {
   const router = useRouter()
   const [idea, setIdea] = useState('')
@@ -130,56 +140,92 @@ export default function HomePage() {
 
       <div className="relative z-10 container mx-auto px-4 py-16 md:py-24">
         <section className="mx-auto mb-16 flex max-w-5xl flex-col items-start">
-          <p className="text-sm font-medium tracking-[0.18em] text-slate-500">Founder Signal</p>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-sm font-medium tracking-[0.18em] text-slate-500"
+          >
+            Founder Signal
+          </motion.p>
 
           <div className="mt-16 max-w-4xl">
-            <div className="inline-flex items-center rounded-full border border-slate-200/80 bg-white/80 px-4 py-2 text-sm font-medium text-slate-600 shadow-[var(--shadow-soft)] backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="inline-flex items-center rounded-full border border-slate-200/80 bg-white/80 px-4 py-2 text-sm font-medium text-slate-600 shadow-[var(--shadow-soft)] backdrop-blur-sm"
+            >
               Idea validation for founders moving fast
-            </div>
+            </motion.div>
 
-            <h1 className="mt-6 max-w-3xl text-6xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-7xl md:text-8xl">
+            <motion.h1
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="mt-6 max-w-3xl text-6xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-7xl md:text-8xl"
+            >
               Stop Building Things Nobody Wants
-            </h1>
+            </motion.h1>
 
-            <p className="mt-6 max-w-3xl text-xl leading-8 text-slate-600 md:text-2xl md:leading-9">
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="mt-6 max-w-3xl text-xl leading-8 text-slate-600 md:text-2xl md:leading-9"
+            >
               Founder Signal helps you pressure-test an idea before you sink weeks into code, hiring, or
               positioning. Describe the problem, audience, and wedge in plain English. We surface demand
               signals, blind spots, and the next validation steps that actually matter. So you can move
               with conviction instead of guesswork.
-            </p>
+            </motion.p>
 
-            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-            <Button
-              type="button"
-              size="lg"
-              onClick={scrollToValidate}
-              aria-label="Scroll to validate your idea form"
-              className="min-h-11 bg-primary px-7 text-primary-foreground shadow-[var(--shadow-lifted)]"
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="mt-10 flex flex-col gap-3 sm:flex-row"
             >
-              Validate Your Idea
-            </Button>
-            <Link
-              href="/sample"
-              aria-label="View sample validation report"
-              className={buttonVariants({
-                variant: 'outline',
-                size: 'lg',
-                className: 'min-h-11 border-slate-200 bg-white/80 px-7 text-slate-700 shadow-none backdrop-blur-sm'
-              })}
-            >
-              See Sample Report
-            </Link>
-            </div>
+              <Button
+                type="button"
+                size="lg"
+                onClick={scrollToValidate}
+                aria-label="Scroll to validate your idea form"
+                className="min-h-11 bg-primary px-7 text-primary-foreground shadow-[var(--shadow-lifted)]"
+              >
+                Validate Your Idea
+              </Button>
+              <Link
+                href="/sample"
+                aria-label="View sample validation report"
+                className={buttonVariants({
+                  variant: 'outline',
+                  size: 'lg',
+                  className: 'min-h-11 border-slate-200 bg-white/80 px-7 text-slate-700 shadow-none backdrop-blur-sm'
+                })}
+              >
+                See Sample Report
+              </Link>
+            </motion.div>
 
-            <p className="mt-4 text-sm text-slate-500">
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+              className="mt-4 text-sm text-slate-500"
+            >
               Clear signals on demand, risk, and next moves in seconds.
-            </p>
+            </motion.p>
           </div>
         </section>
 
         <LogoCarousel />
 
-        <section className="mx-auto mb-16 max-w-5xl py-4">
+        <ScrollReveal className="mb-16">
+          <StatsGrid stats={stats} columns={4} className="mx-auto max-w-4xl" />
+        </ScrollReveal>
+
+        <ScrollReveal delay={0.1} className="mx-auto mb-16 max-w-5xl py-4">
           <div className="mb-8 text-center">
             <h2 className="text-2xl font-bold text-foreground">How It Works</h2>
           </div>
@@ -206,9 +252,9 @@ export default function HomePage() {
               )
             })}
           </div>
-        </section>
+        </ScrollReveal>
 
-        <section className="mx-auto mb-16 max-w-5xl">
+        <ScrollReveal delay={0.2} className="mx-auto mb-16 max-w-5xl">
           <div className="mb-8 text-center">
             <h2 className="text-2xl font-bold text-foreground">What You Get</h2>
             <p className="mt-2 text-sm text-muted-foreground">Every validation report includes:</p>
@@ -222,9 +268,9 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-        </section>
+        </ScrollReveal>
 
-        <section className="mx-auto grid max-w-4xl gap-6 md:grid-cols-3">
+        <ScrollReveal delay={0.3} className="mx-auto grid max-w-4xl gap-6 md:grid-cols-3">
           {features.map((feature) => (
             <Card key={feature.title} className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)]">
               <CardContent className="p-6">
@@ -233,9 +279,9 @@ export default function HomePage() {
               </CardContent>
             </Card>
           ))}
-        </section>
+        </ScrollReveal>
 
-        <section id="validate" className="py-16">
+        <ScrollReveal delay={0.4} id="validate" className="py-16">
           <div className="mx-auto max-w-2xl">
             <h2 className="mb-2 text-center text-2xl font-semibold text-slate-900">
               Ready to validate your idea?
@@ -251,41 +297,41 @@ export default function HomePage() {
                     <label htmlFor="idea" className="mb-2 block text-sm font-medium text-slate-700">
                       Describe your startup idea
                     </label>
-<Textarea
-              id="idea"
-              aria-label="Startup idea description"
-              placeholder="A platform that helps freelancers find equity-based startup opportunities..."
-              value={idea}
-              onChange={(e) => setIdea(e.target.value)}
-              className="min-h-32 border-slate-200 bg-white text-slate-900 placeholder:text-slate-400"
-              disabled={isSubmitting}
-            />
+                    <Textarea
+                      id="idea"
+                      aria-label="Startup idea description"
+                      placeholder="A platform that helps freelancers find equity-based startup opportunities..."
+                      value={idea}
+                      onChange={(e) => setIdea(e.target.value)}
+                      className="min-h-32 border-slate-200 bg-white text-slate-900 placeholder:text-slate-400"
+                      disabled={isSubmitting}
+                    />
                   </div>
 
                   {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
 
                   <div className="flex justify-center">
-        <Button
-          type="submit"
-          size="lg"
-          aria-label="Analyze startup idea"
-          aria-busy={isSubmitting}
-          disabled={isSubmitting}
-          className="min-h-11 min-w-48 bg-primary text-primary-foreground"
-        >
-          {isSubmitting ? 'Preparing live analysis...' : 'Analyze Idea'}
-        </Button>
+                    <Button
+                      type="submit"
+                      size="lg"
+                      aria-label="Analyze startup idea"
+                      aria-busy={isSubmitting}
+                      disabled={isSubmitting}
+                      className="min-h-11 min-w-48 bg-primary text-primary-foreground"
+                    >
+                      {isSubmitting ? 'Preparing live analysis...' : 'Analyze Idea'}
+                    </Button>
                   </div>
                 </form>
               </CardContent>
             </Card>
           </div>
-</section>
+        </ScrollReveal>
 
-      <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
-        <RecentAnalyses />
-      </section>
-    </div>
-  </main>
+        <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+          <RecentAnalyses />
+        </section>
+      </div>
+    </main>
   )
 }

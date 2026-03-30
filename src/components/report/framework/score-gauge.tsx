@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { AnimatedScore } from '@/components/shadcnspace'
 
 type GaugeSize = 'sm' | 'md' | 'lg'
 
@@ -38,37 +38,14 @@ export function ScoreGauge({
   showValue = true,
   className,
 }: ScoreGaugeProps) {
-  const [animatedScore, setAnimatedScore] = useState(0)
   const config = sizeConfig[size]
   const radius = (config.dimensions - config.strokeWidth) / 2 - 4
-  const circumference = 2 * Math.PI * radius
   const clampedScore = Math.max(0, Math.min(100, Math.round(score)))
-  const strokeDashoffset = circumference - (animatedScore / 100) * circumference
   const gradientId = getGradientId()
   const color = getScoreColor(clampedScore)
 
-  useEffect(() => {
-    let animationFrameId: number
-    const duration = 1000
-    const startTime = performance.now()
-    const startValue = 0
-    const endValue = clampedScore
-
-    function animate(currentTime: number) {
-      const elapsed = currentTime - startTime
-      const progress = Math.min(elapsed / duration, 1)
-      const easeOut = 1 - Math.pow(1 - progress, 3)
-      const currentValue = startValue + (endValue - startValue) * easeOut
-      setAnimatedScore(currentValue)
-
-      if (progress < 1) {
-        animationFrameId = requestAnimationFrame(animate)
-      }
-    }
-
-    animationFrameId = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(animationFrameId)
-  }, [clampedScore])
+  const circumference = 2 * Math.PI * radius
+  const strokeDashoffset = circumference - (clampedScore / 100) * circumference
 
   return (
     <div className={cn('flex flex-col items-center gap-2', className)}>
@@ -120,14 +97,7 @@ export function ScoreGauge({
 
         {showValue && (
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span
-              className={cn(
-                'font-semibold tracking-[-0.04em] text-foreground',
-                config.fontSize
-              )}
-            >
-              {Math.round(animatedScore)}
-            </span>
+            <AnimatedScore score={clampedScore} size={size} />
           </div>
         )}
       </div>

@@ -32,13 +32,15 @@ function TrendIcon({ trend }: { trend: TrendDirection }) {
 
 function MetricRow({ label, value, trend }: MetricItem) {
   if (!value) return null
-  
+
   return (
-    <div className="flex items-center justify-between py-2">
-      <span className="text-sm text-slate-600">{label}</span>
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-slate-900">{value}</span>
+    <div className="py-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs uppercase tracking-[0.18em] text-slate-500">{label}</span>
         {trend && <TrendIcon trend={trend} />}
+      </div>
+      <div className="mt-1">
+        <span className="text-lg font-semibold tracking-[-0.04em] text-slate-900">{value}</span>
       </div>
     </div>
   )
