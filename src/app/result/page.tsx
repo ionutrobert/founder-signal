@@ -1,12 +1,13 @@
 'use client'
 
-import { Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Toaster } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
 import { ShareButtons } from '@/components/share-buttons'
+import { saveToHistory } from '@/components/recent-analyses'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ReportTabs } from '@/components/report-tabs'
 import { ScoreTooltip } from '@/components/score-tooltip'
@@ -292,6 +293,7 @@ function ResultPageContent() {
   const [displayScore, setDisplayScore] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const savedResultIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     const resultId = searchParams.get('id')
@@ -366,6 +368,20 @@ function ResultPageContent() {
 
     return () => window.cancelAnimationFrame(frame)
   }, [report])
+
+  useEffect(() => {
+    const resultId = searchParams.get('id')
+    if (report && resultId && savedResultIdRef.current !== resultId) {
+      savedResultIdRef.current = resultId
+      saveToHistory({
+        resultId,
+        idea: report.ideaSummary.title,
+        score: report.score,
+        verdict: report.verdict,
+        timestamp: Date.now(),
+      })
+    }
+  }, [report, searchParams])
 
 	const score = report ? clampScore(report.score) : 0
 	const scoreOffset = useMemo(
