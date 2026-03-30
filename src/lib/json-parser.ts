@@ -27,6 +27,60 @@ function normalizeSection(section: Record<string, unknown>): Record<string, unkn
   if ('score' in section) {
     section.score = validateScore(section.score)
   }
+  if ('summary' in section && typeof section.summary !== 'string') {
+    delete section.summary
+  }
+  if ('scoreReasoning' in section && typeof section.scoreReasoning !== 'string') {
+    delete section.scoreReasoning
+  }
+  return section
+}
+
+function normalizeWhyNow(section: Record<string, unknown>): Record<string, unknown> {
+  section = normalizeSection(section)
+  if (!Array.isArray(section.marketForces)) {
+    section.marketForces = []
+  }
+  if (!Array.isArray(section.enablingTechnology)) {
+    section.enablingTechnology = []
+  }
+  if (!Array.isArray(section.culturalShift)) {
+    section.culturalShift = []
+  }
+  if (typeof section.timing !== 'string') {
+    section.timing = 'Market timing assessment pending'
+  }
+  return section
+}
+
+function normalizeMarketInsight(section: Record<string, unknown>): Record<string, unknown> {
+  section = normalizeSection(section)
+  if (section.marketGrowthRate !== undefined && typeof section.marketGrowthRate !== 'string') {
+    delete section.marketGrowthRate
+  }
+  if (
+    section.marketMaturity !== undefined &&
+    !['emerging', 'growing', 'mature', 'declining'].includes(section.marketMaturity as string)
+  ) {
+    delete section.marketMaturity
+  }
+  if (section.keyMetrics !== undefined && !Array.isArray(section.keyMetrics)) {
+    delete section.keyMetrics
+  }
+  return section
+}
+
+function normalizeCompetition(section: Record<string, unknown>): Record<string, unknown> {
+  section = normalizeSection(section)
+  if (section.marketShareEstimate !== undefined && typeof section.marketShareEstimate !== 'string') {
+    delete section.marketShareEstimate
+  }
+  if (
+    section.competitiveIntensity !== undefined &&
+    !['low', 'medium', 'high'].includes(section.competitiveIntensity as string)
+  ) {
+    delete section.competitiveIntensity
+  }
   return section
 }
 
@@ -51,12 +105,23 @@ function validateReport(obj: unknown): obj is ValidationReport {
   report.ideaSummary = normalizeSection(report.ideaSummary as Record<string, unknown>)
   report.problemClarity = normalizeSection(report.problemClarity as Record<string, unknown>)
   report.targetAudience = normalizeSection(report.targetAudience as Record<string, unknown>)
-  report.marketInsight = normalizeSection(report.marketInsight as Record<string, unknown>)
-  report.competition = normalizeSection(report.competition as Record<string, unknown>)
+  report.marketInsight = normalizeMarketInsight(report.marketInsight as Record<string, unknown>)
+  report.competition = normalizeCompetition(report.competition as Record<string, unknown>)
   report.positioning = normalizeSection(report.positioning as Record<string, unknown>)
   report.mvpScope = normalizeSection(report.mvpScope as Record<string, unknown>)
   report.monetization = normalizeSection(report.monetization as Record<string, unknown>)
   report.risks = normalizeSection(report.risks as Record<string, unknown>)
+
+  if (report.whyNow && typeof report.whyNow === 'object') {
+    report.whyNow = normalizeWhyNow(report.whyNow as Record<string, unknown>)
+  } else {
+    report.whyNow = {
+      timing: 'Market timing assessment pending',
+      marketForces: [],
+      enablingTechnology: [],
+      culturalShift: [],
+    }
+  }
 
   const score = validateScore(report.score)
   if (score === undefined) return false
