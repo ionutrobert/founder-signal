@@ -4,6 +4,7 @@ export interface IdeaSummary {
   category: string
   problemTheme: string
   tractionEvidence: string[]
+  summary?: string
   score?: number
   scoreReasoning?: string
 }
@@ -13,6 +14,7 @@ export interface WhyNow {
   marketForces: string[]
   enablingTechnology: string[]
   culturalShift: string[]
+  summary?: string
   score?: number
   scoreReasoning?: string
 }
@@ -23,6 +25,7 @@ export interface ProblemClarity {
   affectedUsers: string
   evidence: string[]
   confidenceLevel: string
+  summary?: string
   score?: number
   scoreReasoning?: string
 }
@@ -38,6 +41,7 @@ export interface TargetAudience {
   icp: string
   keySegments: string[]
   personas: PersonaProfile[]
+  summary?: string
   score?: number
   scoreReasoning?: string
 }
@@ -48,6 +52,7 @@ export interface MarketInsight {
   som: string
   trends: string[]
   growthSignals: string[]
+  summary?: string
   score?: number
   scoreReasoning?: string
 }
@@ -63,6 +68,7 @@ export interface Competition {
   directCompetitors: CompetitorProfile[]
   indirectCompetitors: CompetitorProfile[]
   competitiveAdvantage: string
+  summary?: string
   score?: number
   scoreReasoning?: string
 }
@@ -72,6 +78,7 @@ export interface Positioning {
   differentiators: string[]
   messagingPillars: string[]
   brandPromise: string
+  summary?: string
   score?: number
   scoreReasoning?: string
 }
@@ -82,6 +89,7 @@ export interface MVPScope {
   successMetrics: string[]
   resourceNeeds: string[]
   deferredCapabilities: string[]
+  summary?: string
   score?: number
   scoreReasoning?: string
 }
@@ -92,6 +100,7 @@ export interface Monetization {
   salesChannels: string[]
   projections: string
   keyAssumptions: string[]
+  summary?: string
   score?: number
   scoreReasoning?: string
 }
@@ -101,6 +110,7 @@ export interface Risks {
   market: string[]
   operational: string[]
   regulatory: string[]
+  summary?: string
   score?: number
   scoreReasoning?: string
 }
