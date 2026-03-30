@@ -3,15 +3,16 @@
  * These determine how each section contributes to the overall score
  */
 const SECTION_WEIGHTS: Record<string, number> = {
-  ideaSummary: 0.15,
+  ideaSummary: 0.13,
+  whyNow: 0.08,
   problemClarity: 0.10,
   targetAudience: 0.10,
   marketInsight: 0.10,
   competition: 0.15,
   positioning: 0.10,
-  mvpScope: 0.15,
+  mvpScope: 0.12,
   monetization: 0.05,
-  risks: 0.10,
+  risks: 0.07,
 }
 
 function calculateScoreFromVerdict(verdict: 'pass' | 'fail' | 'needs-work'): number {
@@ -784,25 +785,31 @@ function mergePhaseResults(
     verdict = strategic.data.verdict
   }
 
-const report: ValidationReport = {
-      ideaSummary: strategic.data.ideaSummary,
-      whyNow: {
-        timing: 'Market timing assessment pending',
-        marketForces: [],
-        enablingTechnology: [],
-        culturalShift: []
-      },
-      problemClarity: structural.data.problemClarity,
-      targetAudience: structural.data.targetAudience,
-      marketInsight: structural.data.marketInsight,
-      competition: strategic.data.competition,
-      positioning: strategic.data.positioning,
-      mvpScope: strategic.data.mvpScope,
-      monetization: structural.data.monetization,
-      risks: structural.data.risks,
-      score: overallScore,
-      verdict,
-    };
+  const whyNowData = {
+    timing: research.data.marketTiming || 'Market timing assessment pending',
+    marketForces: research.data.industryDynamics || [],
+    enablingTechnology: research.data.growthSignals?.filter(s => 
+      s.toLowerCase().includes('ai') || 
+      s.toLowerCase().includes('technology') ||
+      s.toLowerCase().includes('platform')
+    ) || [],
+    culturalShift: research.data.marketTrends?.slice(0, 3) || [],
+  }
+
+  const report: ValidationReport = {
+    ideaSummary: strategic.data.ideaSummary,
+    whyNow: whyNowData,
+    problemClarity: structural.data.problemClarity,
+    targetAudience: structural.data.targetAudience,
+    marketInsight: structural.data.marketInsight,
+    competition: strategic.data.competition,
+    positioning: strategic.data.positioning,
+    mvpScope: strategic.data.mvpScope,
+    monetization: structural.data.monetization,
+    risks: structural.data.risks,
+    score: overallScore,
+    verdict,
+  };
 
   const result: ValidationResult = {
     ...report,
