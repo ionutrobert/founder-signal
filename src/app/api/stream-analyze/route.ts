@@ -148,22 +148,34 @@ export async function POST(request: Request) {
         }
       }
     }
-  } else if (event.status === 'complete') {
-      // Emit phase complete event
-      if (event.message?.includes('phase completed')) {
-        await writeSseChunk(writer, {
-          type: 'phase',
-          phase: event.phase as 'RESEARCH' | 'STRUCTURAL' | 'STRATEGIC',
-          status: 'complete'
-        })
-        await writeSseFlush(writer)
-      }
+      } else if (event.status === 'complete') {
+        // Emit section scores
+        if (event.sectionScores) {
+          for (const sectionScore of event.sectionScores) {
+            await writeSseChunk(writer, {
+              type: 'sectionScore',
+              section: sectionScore.section,
+              score: sectionScore.score
+            })
+            await writeSseFlush(writer)
+          }
+        }
 
-      await writeSseChunk(writer, {
-        type: 'status',
-        stage: 'streaming',
-        message: event.message || `Completed ${event.phase} phase`
-      })
+        // Emit phase complete event
+        if (event.message?.includes('phase completed')) {
+          await writeSseChunk(writer, {
+            type: 'phase',
+            phase: event.phase as 'RESEARCH' | 'STRUCTURAL' | 'STRATEGIC',
+            status: 'complete'
+          })
+          await writeSseFlush(writer)
+        }
+
+        await writeSseChunk(writer, {
+          type: 'status',
+          stage: 'streaming',
+          message: event.message || `Completed ${event.phase} phase`
+        })
 
       // Calculate real score based on sections completed
       if (event.sections) {
