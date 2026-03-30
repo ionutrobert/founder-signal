@@ -4,13 +4,11 @@ import { motion } from 'framer-motion'
 import { Star } from 'lucide-react'
 
 interface SocialProofBadgeProps {
-  userCount?: number
   rating?: number
   reviewCount?: string
 }
 
 export function SocialProofBadge({ 
-  userCount = 1000, 
   rating = 4.9,
   reviewCount = '500+'
 }: SocialProofBadgeProps) {
@@ -30,14 +28,14 @@ export function SocialProofBadge({
     >
       {/* Overlapping avatars */}
       <div className="flex -space-x-2">
-        {avatars.map((avatar) => (
+        {avatars.map((avatar, index) => (
           <motion.div
             key={avatar.initial}
             className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold border-2 border-white"
             style={{ backgroundColor: avatar.color }}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 + i * 0.1 }}
+            transition={{ delay: 0.2 + index * 0.1 }}
           >
             {avatar.initial}
           </motion.div>
