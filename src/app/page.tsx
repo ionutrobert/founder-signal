@@ -9,12 +9,12 @@ import { BarChart3, FileText, Sparkles } from 'lucide-react'
 import { LogoCarousel } from '@/components/logo-carousel'
 import { RecentAnalyses } from '@/components/recent-analyses'
 import { ScrollReveal } from '@/components/animations'
-import { StatsGrid } from '@/components/shadcnspace'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { SocialProofBadge } from '@/components/social-proof-badge'
-import { ScoreGauge } from '@/components/score-gauge'
+import { ReportPreviewCard } from '@/components/report-preview-card'
+import { AnimatedStats } from '@/components/animated-stats'
 
 const PENDING_IDEA_STORAGE_KEY = 'founder-signal:pending-idea'
 
@@ -62,12 +62,7 @@ const reportAreas = [
   { title: 'Risks', description: 'What could kill this? Technical, market, operational' }
 ]
 
-const stats = [
-  { value: 11, label: 'Validation Dimensions', suffix: '' },
-  { value: 30, label: 'Seconds to First Insights', suffix: 's' },
-  { value: 95, label: 'Accuracy Rate', suffix: '%' },
-  { value: 1000, label: 'Ideas Validated', suffix: '+' },
-]
+
 
 export default function HomePage() {
   const router = useRouter()
@@ -179,32 +174,31 @@ export default function HomePage() {
             </motion.div>
           </div>
 
-          {/* Right Column - Report Preview with Score Gauge */}
-          <motion.div
-            initial={{ opacity: 0, x: 30, scale: 0.95 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            transition={{ duration: 0.7, delay: 0.3 }}
-            className="mt-16 lg:mt-0 flex-1 flex flex-col items-center"
-          >
-            <Card className="border-slate-200 bg-white shadow-xl p-8 max-w-md w-full">
-              <div className="flex flex-col items-center">
-                <h3 className="text-lg font-semibold text-slate-900 mb-6">Validation Score</h3>
-                <ScoreGauge score={87} size={220} duration={2500} />
-              </div>
-            </Card>
-            
-            {/* Logo Carousel */}
-            <div className="mt-12 w-full">
-              <LogoCarousel />
-            </div>
-          </motion.div>
-        </section>
+        {/* Right Column - Report Preview */}
+        <div className="mt-16 lg:mt-0 flex-1 flex items-center justify-center">
+          <ReportPreviewCard />
+        </div>
+      </section>
 
+      {/* Logo Carousel */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.6 }}
+        className="mb-16"
+      >
         <LogoCarousel />
+      </motion.div>
 
-        <ScrollReveal className="mb-16">
-          <StatsGrid stats={stats} columns={4} className="mx-auto max-w-4xl" />
-        </ScrollReveal>
+      {/* Animated Stats */}
+      <motion.section
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.7 }}
+        className="mb-16 px-4"
+      >
+        <AnimatedStats />
+      </motion.section>
 
         <ScrollReveal delay={0.1} className="mx-auto mb-16 max-w-5xl py-4">
           <div className="mb-8 text-center">

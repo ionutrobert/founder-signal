@@ -1,9 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Menu, X, Signal } from "lucide-react"
+import { Menu, X, Signal, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/contexts/auth-context"
 
@@ -47,7 +46,7 @@ export default function Navigation() {
                 Founder Signal
               </span>
               <span className="hidden sm:inline text-sm text-slate-500">
-                Validate before you build
+                A smarter way to validate
               </span>
             </div>
           </a>
@@ -57,9 +56,10 @@ export default function Navigation() {
             <Button
               size="sm"
               onClick={() => openAuthDrawer('signup')}
-              className="min-h-10 bg-[#E7EB5D] hover:bg-[#D4D854] text-slate-900 font-medium shadow-sm"
+              className="min-h-10 bg-slate-900 hover:bg-slate-800 text-white font-medium shadow-sm group"
             >
-              Start Free
+              Start free trial
+              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Button>
             <button
               type="button"
@@ -90,22 +90,20 @@ export default function Navigation() {
                 </a>
               ))}
               <div className="pt-4 flex flex-col gap-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full min-h-10"
-                  onClick={() => { openAuthDrawer('login'); setIsMobileMenuOpen(false) }}
-                >
-                  Sign In
-                </Button>
-                <Button 
-                  className="w-full min-h-10 bg-[#E7EB5D] hover:bg-[#D4D854] text-slate-900"
-                  onClick={() => { openAuthDrawer('signup'); setIsMobileMenuOpen(false) }}
-                >
-                  Start Free
-                  <Badge variant="secondary" className="ml-2 bg-slate-900 text-white text-[10px] px-1.5 py-0 h-5">
-                    FREE
-                  </Badge>
-                </Button>
+            <Button
+              variant="outline"
+              className="w-full min-h-10"
+              onClick={() => { openAuthDrawer('login'); setIsMobileMenuOpen(false) }}
+            >
+              Sign In
+            </Button>
+            <Button
+              className="w-full min-h-10 bg-slate-900 hover:bg-slate-800 text-white"
+              onClick={() => { openAuthDrawer('signup'); setIsMobileMenuOpen(false) }}
+            >
+              Start free trial
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
               </div>
             </div>
           </div>
