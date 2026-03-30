@@ -242,7 +242,7 @@ function LoadingSkeleton() {
         <div className="animate-pulse space-y-8">
           <Card className="border-slate-200/80 bg-white/95 shadow-[var(--shadow-lifted)]">
             <CardContent className="flex flex-col gap-8 p-6 md:p-8 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex flex-1 flex-col items-center gap-4 text-center lg:items-start lg:text-left">
+              <div className="flex min-w-0 flex-1 flex-col items-center gap-4 text-center lg:items-start lg:text-left">
                 <div className="h-4 w-36 rounded-full bg-slate-200" />
 
                 <div className="space-y-3">
@@ -255,29 +255,81 @@ function LoadingSkeleton() {
                   <div className="h-7 w-24 rounded-full bg-slate-200" />
                   <div className="h-7 w-28 rounded-full bg-slate-200" />
                 </div>
+
+                <div className="mt-4 flex gap-2">
+                  <div className="h-9 w-9 rounded-lg bg-slate-200" />
+                  <div className="h-9 w-9 rounded-lg bg-slate-200" />
+                </div>
               </div>
 
-<div className="flex shrink-0 flex-col items-center gap-4 rounded-[calc(var(--radius)+0.25rem)] border border-slate-200/80 bg-slate-50/80 px-6 py-5">
-                <div className="h-36 w-36 rounded-full bg-slate-200" />
+              <div className="flex shrink-0 flex-col items-center gap-4 rounded-[calc(var(--radius)+0.25rem)] border border-slate-200/80 bg-slate-50/80 px-6 py-5">
+                <div className="relative h-36 w-36">
+                  <div className="h-36 w-36 rounded-full bg-slate-200" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+                    <div className="h-10 w-12 rounded bg-slate-300" />
+                    <div className="h-3 w-14 rounded bg-slate-300" />
+                  </div>
+                </div>
                 <div className="h-4 w-44 rounded bg-slate-200" />
               </div>
             </CardContent>
           </Card>
 
-          <section className="grid gap-6 md:grid-cols-2">
-            {[1, 2, 3, 4].map((i) => (
-              <Card key={i} className="border-slate-200/80 bg-white shadow-[var(--shadow-soft)]">
-                <CardContent className="space-y-4 p-6">
-                  <div className="h-5 w-32 rounded bg-slate-200" />
-                  <div className="space-y-2">
-                    <div className="h-3 w-full rounded bg-slate-100" />
-                    <div className="h-3 w-3/4 rounded bg-slate-100" />
-                    <div className="h-3 w-1/2 rounded bg-slate-100" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </section>
+          <div className="space-y-6">
+            <div className="flex gap-2 rounded-lg border border-slate-200/80 bg-slate-50/50 p-1">
+              <div className="flex-1 rounded-md bg-white px-4 py-2 shadow-sm">
+                <div className="mx-auto h-5 w-20 rounded bg-slate-200" />
+              </div>
+              <div className="flex-1 px-4 py-2">
+                <div className="mx-auto h-5 w-16 rounded bg-slate-200" />
+              </div>
+            </div>
+
+            <section className="grid gap-6 md:grid-cols-2">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <Card
+                  key={i}
+                  className={cn(
+                    'border-slate-200/80 bg-white shadow-[var(--shadow-soft)]',
+                    i === 5 ? 'md:col-span-2' : undefined
+                  )}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-32 rounded bg-slate-200" />
+                      <div className="h-5 w-5 rounded-full bg-slate-100" />
+                    </div>
+                    <div className="h-4 w-48 rounded bg-slate-100" />
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <div className="space-y-3">
+                      <div className="h-3 w-24 rounded bg-slate-200" />
+                      <div className="h-4 w-full rounded bg-slate-100" />
+                    </div>
+                    <div className="space-y-3">
+                      <div className="h-3 w-28 rounded bg-slate-200" />
+                      <div className="h-4 w-3/4 rounded bg-slate-100" />
+                    </div>
+                    <div className="space-y-3">
+                      <div className="h-3 w-20 rounded bg-slate-200" />
+                      <div className="h-4 w-1/2 rounded bg-slate-100" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-3 w-32 rounded bg-slate-200" />
+                      <div className="flex items-start gap-2">
+                        <div className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-200" />
+                        <div className="h-3 w-40 rounded bg-slate-100" />
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-200" />
+                        <div className="h-3 w-32 rounded bg-slate-100" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </section>
+          </div>
         </div>
       </div>
     </main>
