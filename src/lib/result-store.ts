@@ -6,6 +6,7 @@ interface StoredResult {
   id: string
   data: ValidationReport
   createdAt: number
+  ownerId?: string
   partialFailures?: ValidationResult['partialFailures']
   phaseErrors?: ValidationResult['phases']
 }
@@ -34,18 +35,20 @@ export function generateResultId(): string {
 }
 
 export async function storeResult(data: ValidationReport, extra?: {
+  ownerId?: string
   partialFailures?: ValidationResult['partialFailures']
   phases?: ValidationResult['phases']
 }): Promise<string> {
   await ensureResultsDir()
-  
+
   const id = generateResultId()
   const filePath = await getFilePath(id)
-  
+
   const stored: StoredResult = {
     id,
     data,
     createdAt: Date.now(),
+    ...(extra?.ownerId && { ownerId: extra.ownerId }),
     ...(extra?.partialFailures && { partialFailures: extra.partialFailures }),
     ...(extra?.phases && { phaseErrors: extra.phases }),
   }
@@ -127,5 +130,42 @@ export async function getStoreStats(): Promise<{ size: number; ids: string[] }> 
     return { size: ids.length, ids }
   } catch {
     return { size: 0, ids: [] }
+  }
+}
+
+export async function setOwner(resultId: string, ownerId: string): Promise<boolean> {
+  const filePath = await getFilePath(resultId)
+  try {
+    const content = await fs.readFile(filePath, 'utf-8')
+    const stored: StoredResult = JSON.parse(content)
+    stored.ownerId = ownerId
+    await fs.writeFile(filePath, JSON.stringify(stored), 'utf-8')
+    return true
+  } catch {
+    return false
+  }
+}
+
+export async function getResultsByOwner(ownerId: string): Promise<StoredResult[]> {
+  await ensureResultsDir()
+  try {
+    const files = await fs.readdir(RESULTS_DIR)
+    const results: StoredResult[] = []
+    for (const file of files) {
+      if (!file.endsWith('.json')) continue
+      try {
+        const filePath = path.join(RESULTS_DIR, file)
+        const content = await fs.readFile(filePath, 'utf-8')
+        const stored: StoredResult = JSON.parse(content)
+        if (stored.ownerId === ownerId && Date.now() - stored.createdAt <= MAX_AGE_MS) {
+          results.push(stored)
+        }
+      } catch {
+        // Ignore individual file errors
+      }
+    }
+    return results.sort((a, b) => b.createdAt - a.createdAt)
+  } catch {
+    return []
   }
 }
