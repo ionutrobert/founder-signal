@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowRight, Target, Users, TrendingUp, Clock, Signal } from 'lucide-react'
+import { ArrowUpRight, Target, Users, TrendingUp, Clock, Signal } from 'lucide-react'
 
 import { RecentAnalyses } from '@/components/recent-analyses'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -88,7 +88,7 @@ export default function HomePage() {
                   })}
                 >
                   <span>Get Started</span>
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </Link>
                 <Link
                   href="/sample"
@@ -119,146 +119,171 @@ export default function HomePage() {
             </div>
           </motion.div>
 
-          {/* Row 3: Report Preview - with overflow hidden at bottom */}
+          {/* Row 3: Report Preview with background image */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
-            className="relative overflow-hidden"
-            style={{ maxHeight: '520px' }}
+            className="relative"
           >
-            {/* Background wrapper with gradient */}
-            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/50 shadow-2xl">
-              {/* Background decorative elements */}
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-blue-500/5 to-lime-500/10" />
-              <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-violet-500/20 to-blue-500/10 rounded-full blur-3xl" />
-              <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-br from-lime-500/10 to-emerald-500/5 rounded-full blur-3xl" />
-
-              {/* Report content */}
-              <div className="relative p-6 lg:p-8">
-                {/* Site header (decorative, not clickable) */}
-                <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-700/50">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#E7EB5D] flex items-center justify-center">
-                      <Signal className="w-5 h-5 text-slate-900" />
+            {/* Background image container */}
+            <div className="relative rounded-2xl overflow-hidden">
+              {/* Background image */}
+              <div 
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                style={{ backgroundImage: 'url(/hero-bg.jpg)' }}
+              />
+              {/* Overlay to darken image slightly */}
+              <div className="absolute inset-0 bg-slate-900/30" />
+              
+              {/* Report container with overflow hidden */}
+              <div className="relative overflow-hidden" style={{ maxHeight: '520px' }}>
+                {/* Report wrapper - light theme */}
+                <div className="relative mx-4 sm:mx-8 lg:mx-16 mt-8 mb-0 rounded-t-2xl overflow-hidden bg-white shadow-2xl">
+                  {/* Decorative top gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-violet-50/50 via-white to-blue-50/30 pointer-events-none" />
+                  
+                  {/* Site header (decorative, not clickable) */}
+                  <div className="relative flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white/80 backdrop-blur-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center">
+                        <Signal className="w-5 h-5 text-[#E7EB5D]" />
+                      </div>
+                      <span className="text-slate-900 font-semibold">Founder Signal</span>
                     </div>
-                    <span className="text-white font-semibold">Founder Signal</span>
-                  </div>
-                  <div className="flex items-center gap-6 text-slate-400 text-sm">
-                    <span className="hidden sm:inline">Reports</span>
-                    <span className="hidden sm:inline">History</span>
-                    <span className="hidden sm:inline">Settings</span>
-                    <div className="w-8 h-8 rounded-full bg-slate-700" />
-                  </div>
-                </div>
-
-                {/* Two column layout: Sections on left, Score on right */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Left column - Stacked sections */}
-                  <div className="lg:col-span-2 space-y-4">
-                    {/* Why Now */}
-                    <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 backdrop-blur-sm">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                            <Clock className="w-5 h-5 text-violet-400" />
-                          </div>
-                          <div>
-                            <h3 className="text-white font-semibold">Why Now</h3>
-                            <p className="text-xs text-slate-400">Market timing and momentum</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-2xl font-bold text-emerald-400">92</span>
-                          <span className="text-sm text-slate-500">/100</span>
-                        </div>
-                      </div>
-                      <div className="h-2 bg-slate-700/50 rounded-full overflow-hidden">
-                        <div className="h-full w-[92%] bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" />
-                      </div>
-                      <p className="mt-3 text-sm text-slate-300">Perfect timing with AI tailwinds and remote work trends...</p>
-                    </div>
-
-                    {/* Problem Clarity */}
-                    <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 backdrop-blur-sm">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                            <Target className="w-5 h-5 text-blue-400" />
-                          </div>
-                          <div>
-                            <h3 className="text-white font-semibold">Problem Clarity</h3>
-                            <p className="text-xs text-slate-400">How clearly the problem is framed</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-2xl font-bold text-emerald-400">88</span>
-                          <span className="text-sm text-slate-500">/100</span>
-                        </div>
-                      </div>
-                      <div className="h-2 bg-slate-700/50 rounded-full overflow-hidden">
-                        <div className="h-full w-[88%] bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" />
-                      </div>
-                      <p className="mt-3 text-sm text-slate-300">Clear pain point with strong evidence...</p>
-                    </div>
-
-                    {/* Target Audience */}
-                    <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 backdrop-blur-sm">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                            <Users className="w-5 h-5 text-amber-400" />
-                          </div>
-                          <div>
-                            <h3 className="text-white font-semibold">Target Audience</h3>
-                            <p className="text-xs text-slate-400">Who the product serves</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-2xl font-bold text-amber-400">85</span>
-                          <span className="text-sm text-slate-500">/100</span>
-                        </div>
-                      </div>
-                      <div className="h-2 bg-slate-700/50 rounded-full overflow-hidden">
-                        <div className="h-full w-[85%] bg-gradient-to-r from-amber-500 to-amber-400 rounded-full" />
-                      </div>
-                      <p className="mt-3 text-sm text-slate-300">Well-defined ICP with validated pain points...</p>
+                    <div className="flex items-center gap-6 text-slate-500 text-sm">
+                      <span className="hidden sm:inline">Reports</span>
+                      <span className="hidden sm:inline">History</span>
+                      <span className="hidden sm:inline">Settings</span>
+                      <div className="w-8 h-8 rounded-full bg-slate-200" />
                     </div>
                   </div>
 
-                  {/* Right column - Score gauge (partially visible) */}
-                  <div className="hidden lg:flex flex-col items-center justify-start pt-8">
-                    <div className="relative">
-                      <ScoreGauge score={87} size={180} duration={2500} />
-                      <div className="mt-4 text-center">
-                        <p className="text-white font-semibold text-lg">Overall Score</p>
-                        <p className="text-slate-400 text-sm">Strong Potential</p>
+                  {/* Report content */}
+                  <div className="relative p-6 lg:p-8">
+                    {/* Report header */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-lg font-semibold text-slate-900">Validation Report</h3>
+                        <p className="text-sm text-slate-500">AI Analysis Complete</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-sm font-medium">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        Strong
                       </div>
                     </div>
-                    
-                    {/* Additional section preview partially visible */}
-                    <div className="mt-6 w-full bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
-                      <div className="flex items-center gap-3 mb-2">
-                        <TrendingUp className="w-4 h-4 text-slate-400" />
-                        <span className="text-sm font-medium text-slate-300">Market</span>
+
+                    {/* Two column layout: Sections on left, Score on right */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      {/* Left column - Stacked sections */}
+                      <div className="lg:col-span-2 space-y-4">
+                        {/* Why Now */}
+                        <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center">
+                                <Clock className="w-5 h-5 text-violet-600" />
+                              </div>
+                              <div>
+                                <h3 className="text-slate-900 font-semibold">Why Now</h3>
+                                <p className="text-xs text-slate-500">Market timing and momentum</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-2xl font-bold text-emerald-600">92</span>
+                              <span className="text-sm text-slate-400">/100</span>
+                            </div>
+                          </div>
+                          <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                            <div className="h-full w-[92%] bg-emerald-500 rounded-full" />
+                          </div>
+                        </div>
+
+                        {/* Problem Clarity */}
+                        <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                                <Target className="w-5 h-5 text-blue-600" />
+                              </div>
+                              <div>
+                                <h3 className="text-slate-900 font-semibold">Problem Clarity</h3>
+                                <p className="text-xs text-slate-500">How clearly the problem is framed</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-2xl font-bold text-emerald-600">88</span>
+                              <span className="text-sm text-slate-400">/100</span>
+                            </div>
+                          </div>
+                          <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                            <div className="h-full w-[88%] bg-emerald-500 rounded-full" />
+                          </div>
+                        </div>
+
+                        {/* Target Audience */}
+                        <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                                <Users className="w-5 h-5 text-amber-600" />
+                              </div>
+                              <div>
+                                <h3 className="text-slate-900 font-semibold">Target Audience</h3>
+                                <p className="text-xs text-slate-500">Who the product serves</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-2xl font-bold text-amber-600">85</span>
+                              <span className="text-sm text-slate-400">/100</span>
+                            </div>
+                          </div>
+                          <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                            <div className="h-full w-[85%] bg-amber-500 rounded-full" />
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-xl font-bold text-amber-400">78</span>
-                        <span className="text-xs text-slate-500">/100</span>
+
+                      {/* Right column - Score gauge (partially visible) */}
+                      <div className="hidden lg:flex flex-col items-center justify-start pt-4">
+                        <div className="relative">
+                          <ScoreGauge score={87} size={160} duration={2500} />
+                          <div className="mt-4 text-center">
+                            <p className="text-slate-900 font-semibold text-lg">Overall Score</p>
+                            <p className="text-emerald-600 text-sm font-medium">Strong Potential</p>
+                          </div>
+                        </div>
+                        
+                        {/* Additional section preview partially visible */}
+                        <div className="mt-6 w-full bg-slate-50 rounded-xl p-4 border border-slate-100">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                              <TrendingUp className="w-4 h-4 text-slate-500" />
+                            </div>
+                            <span className="text-sm font-medium text-slate-700">Market</span>
+                          </div>
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-xl font-bold text-amber-600">78</span>
+                            <span className="text-xs text-slate-400">/100</span>
+                          </div>
+                          <div className="mt-2 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div className="h-full w-[78%] bg-amber-500 rounded-full" />
+                          </div>
+                        </div>
                       </div>
+                    </div>
+
+                    {/* More content below that gets cut off */}
+                    <div className="mt-6 space-y-4 opacity-60">
+                      <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 h-16" />
+                      <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 h-16" />
                     </div>
                   </div>
-                </div>
 
-                {/* More content below that gets cut off */}
-                <div className="mt-6 space-y-4 opacity-50">
-                  <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30 h-20" />
-                  <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30 h-20" />
+                  {/* Bottom fade gradient */}
+                  <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none" />
                 </div>
               </div>
-
-              {/* Bottom gradient fade */}
-              <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-slate-900 via-slate-900/90 to-transparent pointer-events-none" />
             </div>
           </motion.div>
         </div>
