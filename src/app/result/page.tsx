@@ -3,8 +3,10 @@
 import { Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { Toaster } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
+import { ShareButtons } from '@/components/share-buttons'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ReportTabs } from '@/components/report-tabs'
 import { ScoreTooltip } from '@/components/score-tooltip'
@@ -365,26 +367,29 @@ function ResultPageContent() {
     return () => window.cancelAnimationFrame(frame)
   }, [report])
 
-  const score = report ? clampScore(report.score) : 0
-  const scoreOffset = useMemo(
-    () => SCORE_CIRCUMFERENCE - (displayScore / 100) * SCORE_CIRCUMFERENCE,
-    [displayScore]
-  )
+	const score = report ? clampScore(report.score) : 0
+	const scoreOffset = useMemo(
+		() => SCORE_CIRCUMFERENCE - (displayScore / 100) * SCORE_CIRCUMFERENCE,
+		[displayScore]
+	)
 
-  if (isLoading || !report) {
-    return <LoadingSkeleton />
-  }
+	const resultId = searchParams.get('id')
 
-  const verdict = verdictStyles[report.verdict]
+	if (isLoading || !report) {
+		return <LoadingSkeleton />
+	}
 
-  return (
-    <main className="min-h-screen bg-gradient-to-b from-white via-slate-50 to-slate-100">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 right-0 h-72 w-72 rounded-full bg-blue-300/15 blur-3xl" />
-        <div className="absolute left-0 top-1/3 h-80 w-80 rounded-full bg-violet-300/10 blur-3xl" />
-      </div>
+	const verdict = verdictStyles[report.verdict]
 
-      <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+	return (
+		<main className="min-h-screen bg-gradient-to-b from-white via-slate-50 to-slate-100">
+			<Toaster position="top-right" />
+			<div className="pointer-events-none absolute inset-0 overflow-hidden">
+				<div className="absolute -top-32 right-0 h-72 w-72 rounded-full bg-blue-300/15 blur-3xl" />
+				<div className="absolute left-0 top-1/3 h-80 w-80 rounded-full bg-violet-300/10 blur-3xl" />
+			</div>
+
+			<div className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
         <Card className="border-slate-200/80 bg-white/95 shadow-[var(--shadow-lifted)]">
           <CardContent className="flex flex-col gap-8 p-6 md:p-8 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-w-0 flex-col items-center gap-4 text-center lg:items-start lg:text-left">
@@ -397,16 +402,21 @@ function ResultPageContent() {
                   {report.ideaSummary.oneLiner}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
-                <Badge className={verdict.className}>{verdict.label}</Badge>
-                <Badge variant="outline" className="border-slate-200 bg-white text-slate-700">
-                  {report.ideaSummary.category}
-                </Badge>
-                <Badge variant="outline" className="border-slate-200 bg-white text-slate-700">
-                  {report.ideaSummary.problemTheme}
-                </Badge>
-              </div>
-            </div>
+						<div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+							<Badge className={verdict.className}>{verdict.label}</Badge>
+							<Badge variant="outline" className="border-slate-200 bg-white text-slate-700">
+								{report.ideaSummary.category}
+							</Badge>
+							<Badge variant="outline" className="border-slate-200 bg-white text-slate-700">
+								{report.ideaSummary.problemTheme}
+							</Badge>
+						</div>
+						{resultId && (
+							<div className="mt-4">
+								<ShareButtons resultId={resultId} title={report.ideaSummary.title} />
+							</div>
+						)}
+					</div>
 
             <div className="flex flex-col items-center gap-4 rounded-[calc(var(--radius)+0.25rem)] border border-slate-200/80 bg-slate-50/80 px-6 py-5">
               <div className="relative h-36 w-36">
