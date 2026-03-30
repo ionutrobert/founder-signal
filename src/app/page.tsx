@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { BarChart3, FileText, Sparkles } from 'lucide-react'
 
 import { LogoCarousel } from '@/components/logo-carousel'
+import { RecentAnalyses } from '@/components/recent-analyses'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
@@ -274,8 +275,12 @@ export default function HomePage() {
               </CardContent>
             </Card>
           </div>
-        </section>
-      </div>
-    </main>
+</section>
+
+      <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+        <RecentAnalyses />
+      </section>
+    </div>
+  </main>
   )
 }
