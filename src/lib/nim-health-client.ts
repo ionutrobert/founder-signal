@@ -76,8 +76,8 @@ export function getAllModels(): ModelConfig[] {
 }
 
 /**
- * Test a single model with a minimal request
- * Uses 5s timeout as specified
+ * Test a single model with a realistic analysis prompt
+ * Uses 2s timeout - fast enough to detect working models
  */
 export async function checkModelHealth(modelId: string): Promise<HealthCheckResult> {
   const startTime = Date.now();
@@ -92,10 +92,10 @@ export async function checkModelHealth(modelId: string): Promise<HealthCheckResu
       body: JSON.stringify({
         model: modelId,
         messages: [
-          { role: 'system', content: 'OK' },
-          { role: 'user', content: 'Test' },
+          { role: 'system', content: 'You are a startup validator. Analyze this idea briefly.' },
+          { role: 'user', content: 'AI-powered startup validation platform that analyzes market trends, competition, and generates comprehensive reports for founders. Provide 3 bullet points on market opportunity.' },
         ],
-        max_tokens: 5,
+        max_tokens: 100,
         temperature: 0.1,
       }),
       signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
@@ -116,7 +116,8 @@ export async function checkModelHealth(modelId: string): Promise<HealthCheckResu
     }
 
     const data = await response.json();
-    const hasContent = data.choices?.[0]?.message?.content?.length > 0;
+    const content = data.choices?.[0]?.message?.content;
+    const hasContent = content?.length > 20; // Require meaningful response
 
     return {
       modelId,
