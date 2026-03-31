@@ -13,36 +13,36 @@ export interface ModelMetadata {
 }
 
 /**
- * S+ Tier Models - Best for complex analysis
- * Ordered by observed speed from actual testing
+ * S+ Tier Models - VERIFIED WORKING on NVIDIA NIM
+ * Tested on 2026-03-31, ordered by speed:
+ * 1. qwen3-coder - 1213ms
+ * 2. mistral-large-3 - 1508ms
+ * 3. mistral-small-4 - 1517ms
+ * 4. qwen3.5 - 1688ms
  */
 const S_PLUS_TIER_MODELS: ModelMetadata[] = [
   { id: 'qwen/qwen3-coder-480b-a35b-instruct', tier: 'S+', contextWindow: 128000, priority: 1 },
-  { id: 'z-ai/glm5', tier: 'S+', contextWindow: 128000, priority: 2 },
-  { id: 'moonshotai/kimi-k2.5', tier: 'S+', contextWindow: 200000, priority: 3 },
-  { id: 'z-ai/glm4.7', tier: 'S+', contextWindow: 128000, priority: 4 },
-  { id: 'moonshotai/kimi-k2-thinking', tier: 'S+', contextWindow: 200000, priority: 5 },
+  { id: 'mistralai/mistral-large-3-675b-instruct-2512', tier: 'S+', contextWindow: 128000, priority: 2 },
+  { id: 'mistralai/mistral-small-4-119b-2603', tier: 'S+', contextWindow: 128000, priority: 3 },
+  { id: 'qwen/qwen3.5-122b-a10b', tier: 'S+', contextWindow: 128000, priority: 4 },
 ];
 
 /**
- * S Tier Models - Fallbacks with large context windows
- * Only models that actually exist on NVIDIA NIM
+ * S Tier Models - Previously working, may recover
+ * Not currently working but worth trying
  */
 const S_TIER_MODELS: ModelMetadata[] = [
-  { id: 'meta/llama-3.1-405b-instruct', tier: 'S', contextWindow: 128000, priority: 6 },
-  { id: 'meta/llama-3.3-70b-instruct', tier: 'S', contextWindow: 128000, priority: 7 },
-  { id: 'nvidia/llama-3.1-nemotron-ultra-253b-v1', tier: 'S', contextWindow: 128000, priority: 8 },
-  { id: 'nvidia/llama-3.1-nemotron-70b-instruct', tier: 'S', contextWindow: 128000, priority: 9 },
-  { id: 'mistralai/mistral-large-3-675b-instruct-2512', tier: 'S', contextWindow: 128000, priority: 10 },
+  { id: 'z-ai/glm5', tier: 'S', contextWindow: 128000, priority: 5 },
+  { id: 'moonshotai/kimi-k2.5', tier: 'S', contextWindow: 200000, priority: 6 },
+  { id: 'z-ai/glm4.7', tier: 'S', contextWindow: 128000, priority: 7 },
+  { id: 'moonshotai/kimi-k2-thinking', tier: 'S', contextWindow: 200000, priority: 8 },
 ];
 
 /**
  * A Tier Models - Last resort
  */
 const A_TIER_MODELS: ModelMetadata[] = [
-  { id: 'mistralai/mistral-medium-3-instruct', tier: 'A', contextWindow: 128000, priority: 11 },
-  { id: 'mistralai/mistral-small-4-119b-2603', tier: 'A', contextWindow: 128000, priority: 12 },
-  { id: 'qwen/qwen3.5-122b-a10b', tier: 'A', contextWindow: 128000, priority: 13 },
+  { id: 'nvidia/llama-3.1-nemotron-ultra-253b-v1', tier: 'A', contextWindow: 128000, priority: 9 },
 ];
 
 /**

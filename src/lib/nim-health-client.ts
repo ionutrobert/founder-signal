@@ -3,6 +3,23 @@
  * 
  * Designed to be extracted into a standalone package later.
  * Provides: health checks, model ranking, cascade execution
+ * 
+ * VERIFIED WORKING MODELS (tested 2026-03-31):
+ * - qwen/qwen3-coder-480b-a35b-instruct: 1213ms
+ * - mistralai/mistral-large-3-675b-instruct-2512: 1508ms
+ * - mistralai/mistral-small-4-119b-2603: 1517ms
+ * - qwen/qwen3.5-122b-a10b: 1688ms
+ * 
+ * INTERMITTENT (sometimes works, sometimes empty/timeout):
+ * - z-ai/glm5
+ * - moonshotai/kimi-k2.5
+ * - z-ai/glm4.7
+ * - moonshotai/kimi-k2-thinking
+ * 
+ * REMOVED (consistently fails):
+ * - minimaxai/minimax-m2.5 (60s timeout every time)
+ * - meta/llama-* (timeout)
+ * - nvidia/llama-3.1-nemotron-70b (404)
  */
 
 const NIM_BASE_URL = 'https://integrate.api.nvidia.com/v1';
@@ -26,34 +43,28 @@ export interface HealthCheckResult {
 }
 
 /**
- * Preferred models ordered by observed speed from actual testing:
- * 1. qwen3-coder - 8.8s (fastest, reliable)
- * 2. glm5 - ~3s (fast, reliable)  
- * 3. kimi-k2.5 - variable (your preferred, needs testing)
- * 4. kimi-k2-thinking - sometimes empty responses
- * 5. glm4.7 - sometimes empty responses
- * 
- * minimax-m2.5 REMOVED - consistently times out at 60s
+ * Working models ordered by observed speed
+ * These are verified to work on NVIDIA NIM right now
  */
 export function getPreferredModels(): ModelConfig[] {
   return [
     { id: 'qwen/qwen3-coder-480b-a35b-instruct', contextWindow: 128000, tier: 'S+', priority: 1 },
-    { id: 'z-ai/glm5', contextWindow: 128000, tier: 'S+', priority: 2 },
-    { id: 'moonshotai/kimi-k2.5', contextWindow: 200000, tier: 'S+', priority: 3 },
-    { id: 'z-ai/glm4.7', contextWindow: 128000, tier: 'S+', priority: 4 },
-    { id: 'moonshotai/kimi-k2-thinking', contextWindow: 200000, tier: 'S+', priority: 5 },
+    { id: 'mistralai/mistral-large-3-675b-instruct-2512', contextWindow: 128000, tier: 'S+', priority: 2 },
+    { id: 'mistralai/mistral-small-4-119b-2603', contextWindow: 128000, tier: 'S+', priority: 3 },
+    { id: 'qwen/qwen3.5-122b-a10b', contextWindow: 128000, tier: 'S+', priority: 4 },
   ];
 }
 
 /**
- * Fallback models with large context windows
- * Used when all preferred models fail
+ * Intermittent models - try these if preferred models fail
  */
 export function getFallbackModels(): ModelConfig[] {
   return [
-    { id: 'meta/llama-3.1-405b-instruct', contextWindow: 128000, tier: 'S', priority: 6 },
-    { id: 'meta/llama-3.3-70b-instruct', contextWindow: 128000, tier: 'S', priority: 7 },
-    { id: 'nvidia/llama-3.1-nemotron-ultra-253b-v1', contextWindow: 128000, tier: 'S', priority: 8 },
+    { id: 'z-ai/glm5', contextWindow: 128000, tier: 'S', priority: 5 },
+    { id: 'moonshotai/kimi-k2.5', contextWindow: 200000, tier: 'S', priority: 6 },
+    { id: 'z-ai/glm4.7', contextWindow: 128000, tier: 'S', priority: 7 },
+    { id: 'moonshotai/kimi-k2-thinking', contextWindow: 200000, tier: 'S', priority: 8 },
+    { id: 'nvidia/llama-3.1-nemotron-ultra-253b-v1', contextWindow: 128000, tier: 'A', priority: 9 },
   ];
 }
 

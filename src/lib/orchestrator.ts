@@ -322,13 +322,7 @@ export async function executeResearchPhase(
 
   context.phases.push(result);
 
-  // Emit phase complete
-  await onProgress?.({
-    phase: ValidationPhase.RESEARCH,
-    status: 'complete',
-    message: 'Research phase completed',
-  } as PhaseProgressEvent);
-
+  // Emit phase complete (single event)
   await onProgress?.({
     phase,
     status: 'complete',
@@ -453,13 +447,7 @@ export async function executeStructuralPhase(
 
   context.phases.push(result);
 
-  // Emit phase complete event
-  await onProgress?.({
-    phase: ValidationPhase.STRUCTURAL,
-    status: 'complete',
-    message: 'Structural phase completed',
-  } as PhaseProgressEvent);
-
+  // Emit phase complete event (single)
   await onProgress?.({
     phase,
     status: 'complete',
@@ -585,13 +573,7 @@ export async function executeStrategicPhase(
 
   context.phases.push(result);
 
-  // Emit phase complete event
-  await onProgress?.({
-    phase: ValidationPhase.STRATEGIC,
-    status: 'complete',
-    message: 'Strategic phase completed',
-  } as PhaseProgressEvent);
-
+  // Emit phase complete event (single)
   await onProgress?.({
     phase,
     status: 'complete',
