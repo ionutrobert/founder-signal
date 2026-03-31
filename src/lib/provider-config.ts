@@ -6,8 +6,13 @@
  * 2. OpenCode Go (subscription, reliable backup)
  * 3. OpenCode Zen Free (limited, last resort)
  * 
- * All providers use OpenAI-compatible API format.
- * Keys are loaded from environment variables.
+ * Health check strategy:
+ * - NVIDIA NIM: 3s timeout (fast models)
+ * - OpenCode Go: 10s timeout (reasoning models need more time)
+ * - OpenCode Zen: 10s timeout (reasoning models)
+ * 
+ * The system tests NVIDIA first. If working models found, skips OpenCode tests.
+ * Only tests OpenCode if all NVIDIA models fail.
  */
 
 import { 
@@ -20,17 +25,11 @@ import {
 
 /**
  * Create provider manager from environment variables
- * 
- * Environment variables:
- * - NVIDIA_API_KEY - NVIDIA NIM API key
- * - OPENCODE_API_KEY - OpenCode API key (works for both Go and Zen)
- * - OPENCODE_GO_BASE_URL - OpenCode Go endpoint (default: https://opencode.ai/zen/go/v1)
- * - OPENCODE_ZEN_BASE_URL - OpenCode Zen endpoint (default: https://opencode.ai/zen/v1)
  */
 export function createProviderManager(): ProviderManager {
   const providers: AIProvider[] = [];
 
-  // 1. NVIDIA NIM Provider (FREE - highest priority)
+  // 1. NVIDIA NIM Provider (FREE - highest priority, fast health check)
   const nvidiaKey = process.env.NVIDIA_API_KEY;
   if (nvidiaKey) {
     console.log('[ProviderConfig] Adding NVIDIA NIM provider (FREE)');
@@ -46,7 +45,7 @@ export function createProviderManager(): ProviderManager {
         { id: 'z-ai/glm4.7', providerId: 'nvidia-nim', contextWindow: 128000 },
         { id: 'nvidia/llama-3.1-nemotron-ultra-253b-v1', providerId: 'nvidia-nim', contextWindow: 128000 },
       ],
-      healthTimeout: 3000,
+      healthTimeout: 3000, // 3s - NVIDIA models are fast
       requestTimeout: 30000,
     }));
   }
@@ -59,8 +58,8 @@ export function createProviderManager(): ProviderManager {
     providers.push(new OpenCodeGoProvider({
       apiKey: opencodeKey,
       models: [
-        { id: 'minimax-m2.7', providerId: 'opencode-go', contextWindow: 128000 },
         { id: 'minimax-m2.5', providerId: 'opencode-go', contextWindow: 128000 },
+        { id: 'minimax-m2.7', providerId: 'opencode-go', contextWindow: 128000 },
         { id: 'kimi-k2.5', providerId: 'opencode-go', contextWindow: 200000 },
         { id: 'glm-5', providerId: 'opencode-go', contextWindow: 128000 },
       ],
