@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import React from "react";
+import { useId } from "react";
 
 type SpinningTextProps = {
   text: string;
@@ -20,12 +20,12 @@ const SpinningText: React.FC<SpinningTextProps> = ({
   direction = "normal",
   className,
 }) => {
-  // Generate a unique ID for the path to allow multiple instances
-  const pathId = `circlePath-${Math.random().toString(36).substring(2, 9)}`;
+  const pathId = `circlePath-${useId()}`;
 
   return (
     <div className={className}>
-      <svg viewBox="0 0 100 100" className="w-full h-full">
+      <svg viewBox="0 0 100 100" className="w-full h-full" role="img" aria-label={text}>
+        <title>{text}</title>
         <g
           className="origin-center animate-spin"
           style={{
@@ -59,18 +59,4 @@ const SpinningText: React.FC<SpinningTextProps> = ({
   );
 };
 
-const SpinningTextDemo = () => {
-  return (
-    <>
-      <SpinningText
-        text="JOIN CRYPTO TRENDS • EXPLORE • JOIN CRYPTO TRENDS • EXPLORE •"
-        radius={25}
-        textClassName="text-[4px]"
-        speed={12}
-        direction="normal"
-      />
-    </>
-  );
-};
-
-export default SpinningTextDemo;
+export default SpinningText;

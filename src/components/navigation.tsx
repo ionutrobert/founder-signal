@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Signal, ArrowRight, Menu, FileText, History, Settings, X } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { Signal, ArrowRight, Menu, FileText, History, Settings } from 'lucide-react'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'

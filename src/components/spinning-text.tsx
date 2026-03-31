@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useId } from "react";
-import { motion, useSpring, useTransform, MotionValue } from "framer-motion";
+import { motion, useSpring } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface SpinningTextProps {
@@ -133,9 +133,8 @@ function DigitColumn({
 export function SpinningNumber({
   value,
   size = 48,
-  duration = 2000,
   className,
-}: SpinningTextProps) {
+}: Omit<SpinningTextProps, 'duration'>) {
   const [displayValue, setDisplayValue] = useState(0);
 
   const springConfig = {

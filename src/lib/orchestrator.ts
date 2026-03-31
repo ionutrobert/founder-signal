@@ -57,7 +57,7 @@ import {
   generateStrategicPrompt,
 } from './prompts';
 import { executePhaseRequest, executePhaseRequestStreaming, StreamingCallbacks } from './nim-client-v2';
-import { getRankedModels, cascadeThroughModels, refreshHealthTest } from './model-health-service';
+import { getRankedModels, refreshHealthTest } from './model-health-service';
 import { getRequestContext } from './request-context';
 
 /**
@@ -187,7 +187,7 @@ async function executePhaseWithRetry<T>(
 
   // Try each model in ranked order
   for (let i = 0; i < rankedModels.length; i++) {
-    const model = rankedModels[i];
+    const model = rankedModels[i]!;
 
     // Check if aborted before each attempt
     if (signal?.aborted) {
@@ -652,6 +652,11 @@ function mergePhaseResults(
   }
 
   const report: ValidationReport = {
+    executiveSummary: {
+      plainEnglish: `Your startup idea has been validated with a score of ${overallScore}/100.`,
+      keyTakeaways: strategic.data.ideaSummary?.tractionEvidence?.slice(0, 3) || [],
+      actionItems: ['Build an MVP to test core assumptions', 'Validate with target users', 'Iterate based on feedback'],
+    },
     ideaSummary: strategic.data.ideaSummary,
     whyNow: whyNowData,
     problemClarity: structural.data.problemClarity,

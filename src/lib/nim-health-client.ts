@@ -1,119 +1,77 @@
 /**
- * NVIDIA NIM Health Client
- * Dynamically discovers available models and tests only those that work
+ * NIM Model Client - Modular, reusable NVIDIA NIM model selection
+ * 
+ * Designed to be extracted into a standalone package later.
+ * Provides: health checks, model ranking, cascade execution
  */
 
 const NIM_BASE_URL = 'https://integrate.api.nvidia.com/v1';
-const HEALTH_TIMEOUT_MS = 5000; // 5s timeout
-const MIN_CONTEXT_WINDOW = 128000; // 128k minimum
+const HEALTH_TIMEOUT_MS = 5000;
 
-export interface ModelInfo {
+export interface ModelConfig {
   id: string;
-  contextWindow: number;
   tier: 'S+' | 'S' | 'A';
+  contextWindow: number;
+  priority: number;
 }
 
 export interface HealthCheckResult {
   modelId: string;
   available: boolean;
   latency: number;
-  status: 'ready' | 'unavailable' | 'timeout' | 'error' | 'insufficient_context';
+  status: 'ready' | 'unavailable' | 'timeout' | 'error';
   timestamp: number;
   contextWindow: number;
   error?: string;
 }
 
 /**
- * Fetch all available models from NVIDIA API
- * Uses /v1/models endpoint to discover what's actually available
+ * Preferred models ordered by observed speed from actual testing:
+ * 1. qwen3-coder - 8.8s (fastest, reliable)
+ * 2. glm5 - ~3s (fast, reliable)  
+ * 3. kimi-k2.5 - variable (your preferred, needs testing)
+ * 4. kimi-k2-thinking - sometimes empty responses
+ * 5. glm4.7 - sometimes empty responses
+ * 
+ * minimax-m2.5 REMOVED - consistently times out at 60s
  */
-export async function fetchAvailableModels(): Promise<ModelInfo[]> {
-  try {
-    const response = await fetch(`${NIM_BASE_URL}/models`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${process.env.NVIDIA_API_KEY}`,
-      },
-      signal: AbortSignal.timeout(10000),
-    });
-
-    if (!response.ok) {
-      console.error('[NIM Health] Failed to fetch models:', response.status);
-      return [];
-    }
-
-    const data = await response.json();
-    
-    // Parse models and extract context window from model data
-    const models: ModelInfo[] = [];
-    
-    for (const model of data.data || []) {
-      const modelId = model.id;
-      
-      // Extract context window from model metadata if available
-      // Default to 128k if not specified
-      let contextWindow = 128000;
-      
-      // Try to get context window from model object
-      if (model.object === 'model' && model.created) {
-        // Check if model supports chat completions
-        // Most models have 128k-200k context windows
-        // We'll test them to confirm
-        
-        // Tier determination based on model capabilities
-        let tier: 'S+' | 'S' | 'A' = 'A';
-        
-        // S+ tier models (best for complex analysis)
-        const sPlusModels = [
-          'moonshotai/kimi-k2.5',
-          'moonshotai/kimi-k2-thinking',
-          'qwen/qwen3-coder-480b-a35b-instruct',
-          'z-ai/glm5',
-          'z-ai/glm4.7',
-          'minimaxai/minimax-m2.5',
-        ];
-        
-        if (sPlusModels.some(m => modelId.includes(m))) {
-          tier = 'S+';
-        } else if (modelId.includes('meta/llama-3') || modelId.includes('nvidia/llama-3')) {
-          tier = 'S';
-        }
-        
-        // Estimate context window based on model
-        if (modelId.includes('kimi-k2')) {
-          contextWindow = 200000; // Kimi has 200k
-        } else if (modelId.includes('glm')) {
-          contextWindow = 128000;
-        } else if (modelId.includes('minimax')) {
-          contextWindow = 200000;
-        } else if (modelId.includes('qwen3')) {
-          contextWindow = 128000;
-        }
-        
-        models.push({
-          id: modelId,
-          contextWindow,
-          tier,
-        });
-      }
-    }
-    
-    return models;
-  } catch (error) {
-    console.error('[NIM Health] Error fetching models:', error);
-    return [];
-  }
+export function getPreferredModels(): ModelConfig[] {
+  return [
+    { id: 'qwen/qwen3-coder-480b-a35b-instruct', contextWindow: 128000, tier: 'S+', priority: 1 },
+    { id: 'z-ai/glm5', contextWindow: 128000, tier: 'S+', priority: 2 },
+    { id: 'moonshotai/kimi-k2.5', contextWindow: 200000, tier: 'S+', priority: 3 },
+    { id: 'z-ai/glm4.7', contextWindow: 128000, tier: 'S+', priority: 4 },
+    { id: 'moonshotai/kimi-k2-thinking', contextWindow: 200000, tier: 'S+', priority: 5 },
+  ];
 }
 
 /**
- * Check if a specific model is available using a lightweight request
- * Tests actual model capability with minimal overhead
+ * Fallback models with large context windows
+ * Used when all preferred models fail
+ */
+export function getFallbackModels(): ModelConfig[] {
+  return [
+    { id: 'meta/llama-3.1-405b-instruct', contextWindow: 128000, tier: 'S', priority: 6 },
+    { id: 'meta/llama-3.3-70b-instruct', contextWindow: 128000, tier: 'S', priority: 7 },
+    { id: 'nvidia/llama-3.1-nemotron-ultra-253b-v1', contextWindow: 128000, tier: 'S', priority: 8 },
+  ];
+}
+
+/**
+ * Get all models (preferred + fallback) sorted by priority
+ */
+export function getAllModels(): ModelConfig[] {
+  return [...getPreferredModels(), ...getFallbackModels()];
+}
+
+/**
+ * Test a single model with a minimal request
+ * Uses 5s timeout as specified
  */
 export async function checkModelHealth(modelId: string): Promise<HealthCheckResult> {
   const startTime = Date.now();
   
   try {
-    // Test model with a minimal completion request
     const response = await fetch(`${NIM_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -135,15 +93,14 @@ export async function checkModelHealth(modelId: string): Promise<HealthCheckResu
     const latency = Date.now() - startTime;
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
       return {
         modelId,
         available: false,
         latency,
-        status: response.status === 404 ? 'unavailable' : 'error',
+        status: 'error',
         timestamp: Date.now(),
         contextWindow: 0,
-        error: `${response.status}: ${errorText.slice(0, 100)}`,
+        error: `${response.status}`,
       };
     }
 
@@ -156,7 +113,7 @@ export async function checkModelHealth(modelId: string): Promise<HealthCheckResu
       latency,
       status: hasContent ? 'ready' : 'error',
       timestamp: Date.now(),
-      contextWindow: 128000, // Default, will be updated
+      contextWindow: 128000,
       error: hasContent ? undefined : 'Empty response',
     };
   } catch (error) {
@@ -170,7 +127,7 @@ export async function checkModelHealth(modelId: string): Promise<HealthCheckResu
         status: 'timeout',
         timestamp: Date.now(),
         contextWindow: 0,
-        error: 'Health check timeout',
+        error: 'Timeout',
       };
     }
 
@@ -181,41 +138,23 @@ export async function checkModelHealth(modelId: string): Promise<HealthCheckResu
       status: 'error',
       timestamp: Date.now(),
       contextWindow: 0,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : 'Unknown',
     };
   }
 }
 
 /**
- * Get preferred models list with context windows
- * These are models we know work well for analysis
+ * Test all models in parallel and return ranked results
+ * Only returns models that passed the health check
  */
-export function getPreferredModels(): ModelInfo[] {
-  return [
-    { id: 'moonshotai/kimi-k2.5', contextWindow: 200000, tier: 'S+' },
-    { id: 'qwen/qwen3-coder-480b-a35b-instruct', contextWindow: 128000, tier: 'S+' },
-    { id: 'z-ai/glm5', contextWindow: 128000, tier: 'S+' },
-    { id: 'moonshotai/kimi-k2-thinking', contextWindow: 200000, tier: 'S+' },
-    { id: 'z-ai/glm4.7', contextWindow: 128000, tier: 'S+' },
-    { id: 'minimaxai/minimax-m2.5', contextWindow: 200000, tier: 'S+' },
-    { id: 'meta/llama-3.1-405b-instruct', contextWindow: 128000, tier: 'S' },
-    { id: 'meta/llama-3.3-70b-instruct', contextWindow: 128000, tier: 'S' },
-    { id: 'nvidia/llama-3.1-nemotron-70b-instruct', contextWindow: 128000, tier: 'S' },
-  ];
-}
-
-/**
- * Test all preferred models in parallel
- * Returns results sorted by availability and latency
- */
-export async function testAllModelsHealth(): Promise<HealthCheckResult[]> {
-  const models = getPreferredModels();
+export async function testAllModels(): Promise<HealthCheckResult[]> {
+  const models = getAllModels();
   
   const results = await Promise.all(
     models.map(model => checkModelHealth(model.id))
   );
 
-  // Sort: available first, then by latency
+  // Sort by: available first, then latency
   return results.sort((a, b) => {
     if (a.available && !b.available) return -1;
     if (!a.available && b.available) return 1;
@@ -224,8 +163,8 @@ export async function testAllModelsHealth(): Promise<HealthCheckResult[]> {
 }
 
 /**
- * Calculate stability score based on health metrics
- * FCM-style formula: 30% p95 + 30% jitter + 20% spike + 20% reliability
+ * Calculate stability score (FCM formula)
+ * 30% p95 latency + 30% jitter + 20% spike rate + 20% reliability
  */
 export function calculateStabilityScore(
   latency: number,
@@ -233,31 +172,15 @@ export function calculateStabilityScore(
   jitter: number = 0,
   spikeRate: number = 0
 ): number {
-  const p95Weight = 0.30;
-  const jitterWeight = 0.30;
-  const spikeWeight = 0.20;
-  const reliabilityWeight = 0.20;
-
-  // Normalize values (0-1 scale)
-  const normalizedP95 = Math.min(latency / 10000, 1); // Max 10s
-  const normalizedJitter = Math.min(jitter / 5000, 1); // Max 5s variance
+  const normalizedP95 = Math.min(latency / 10000, 1);
+  const normalizedJitter = Math.min(jitter / 5000, 1);
   const normalizedSpike = Math.min(spikeRate, 1);
 
-  // Calculate score (higher is better)
   const score = 
-    (1 - normalizedP95) * p95Weight +
-    (1 - normalizedJitter) * jitterWeight +
-    (1 - normalizedSpike) * spikeWeight +
-    reliability * reliabilityWeight;
+    (1 - normalizedP95) * 0.30 +
+    (1 - normalizedJitter) * 0.30 +
+    (1 - normalizedSpike) * 0.20 +
+    reliability * 0.20;
 
   return Math.round(score * 100);
-}
-
-/**
- * Get working models sorted by performance
- * Only returns models that passed health check
- */
-export async function getWorkingModels(): Promise<HealthCheckResult[]> {
-  const results = await testAllModelsHealth();
-  return results.filter(r => r.available);
 }

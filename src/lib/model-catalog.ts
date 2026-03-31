@@ -6,118 +6,47 @@ const NIM_ENDPOINT = 'https://integrate.api.nvidia.com/v1/chat/completions';
  * Model metadata interface for catalog entries
  */
 export interface ModelMetadata {
-  /** Unique model identifier */
   id: string;
-  /** Tier classification: S+ (highest), S, A */
   tier: 'S+' | 'S' | 'A';
-  /** Context window size in tokens */
   contextWindow: number;
-  /** Priority for selection (lower = higher priority) */
   priority: number;
 }
 
 /**
- * S+ Tier Models - Highest quality coding models
- * These are the primary models for production use
+ * S+ Tier Models - Best for complex analysis
+ * Ordered by observed speed from actual testing
  */
 const S_PLUS_TIER_MODELS: ModelMetadata[] = [
-  {
-    id: 'moonshotai/kimi-k2.5',
-    tier: 'S+',
-    contextWindow: 200000,
-    priority: 1,
-  },
-  {
-    id: 'qwen/qwen3-coder-480b-a35b-instruct',
-    tier: 'S+',
-    contextWindow: 128000,
-    priority: 2,
-  },
-  {
-    id: 'z-ai/glm5',
-    tier: 'S+',
-    contextWindow: 128000,
-    priority: 3,
-  },
-  {
-    id: 'moonshotai/kimi-k2-thinking',
-    tier: 'S+',
-    contextWindow: 200000,
-    priority: 4,
-  },
-  {
-    id: 'z-ai/glm4.7',
-    tier: 'S+',
-    contextWindow: 128000,
-    priority: 5,
-  },
-  {
-    id: 'minimaxai/minimax-m2.5',
-    tier: 'S+',
-    contextWindow: 200000,
-    priority: 6,
-  },
+  { id: 'qwen/qwen3-coder-480b-a35b-instruct', tier: 'S+', contextWindow: 128000, priority: 1 },
+  { id: 'z-ai/glm5', tier: 'S+', contextWindow: 128000, priority: 2 },
+  { id: 'moonshotai/kimi-k2.5', tier: 'S+', contextWindow: 200000, priority: 3 },
+  { id: 'z-ai/glm4.7', tier: 'S+', contextWindow: 128000, priority: 4 },
+  { id: 'moonshotai/kimi-k2-thinking', tier: 'S+', contextWindow: 200000, priority: 5 },
 ];
 
 /**
- * S Tier Models - Fallbacks when S+ models are unavailable
- * Solid performance, reliable for production
+ * S Tier Models - Fallbacks with large context windows
+ * Only models that actually exist on NVIDIA NIM
  */
 const S_TIER_MODELS: ModelMetadata[] = [
-  {
-    id: 'anthropic/claude-3-5-sonnet',
-    tier: 'S',
-    contextWindow: 200000,
-    priority: 1,
-  },
-  {
-    id: 'google/gemini-1.5-pro',
-    tier: 'S',
-    contextWindow: 2000000,
-    priority: 2,
-  },
-  {
-    id: 'openai/gpt-4o',
-    tier: 'S',
-    contextWindow: 128000,
-    priority: 3,
-  },
-  {
-    id: 'qwen/qwen3-235b-a22b-instruct',
-    tier: 'S',
-    contextWindow: 128000,
-    priority: 4,
-  },
+  { id: 'meta/llama-3.1-405b-instruct', tier: 'S', contextWindow: 128000, priority: 6 },
+  { id: 'meta/llama-3.3-70b-instruct', tier: 'S', contextWindow: 128000, priority: 7 },
+  { id: 'nvidia/llama-3.1-nemotron-ultra-253b-v1', tier: 'S', contextWindow: 128000, priority: 8 },
+  { id: 'nvidia/llama-3.1-nemotron-70b-instruct', tier: 'S', contextWindow: 128000, priority: 9 },
+  { id: 'mistralai/mistral-large-3-675b-instruct-2512', tier: 'S', contextWindow: 128000, priority: 10 },
 ];
 
 /**
- * A Tier Models - Last resort options
- * Acceptable quality when higher tiers exhausted
+ * A Tier Models - Last resort
  */
 const A_TIER_MODELS: ModelMetadata[] = [
-  {
-    id: 'mistralai/mistral-large',
-    tier: 'A',
-    contextWindow: 128000,
-    priority: 1,
-  },
-  {
-    id: 'meta/llama-3.1-405b-instruct',
-    tier: 'A',
-    contextWindow: 128000,
-    priority: 2,
-  },
-  {
-    id: 'deepseek/deepseek-v3',
-    tier: 'A',
-    contextWindow: 64000,
-    priority: 3,
-  },
+  { id: 'mistralai/mistral-medium-3-instruct', tier: 'A', contextWindow: 128000, priority: 11 },
+  { id: 'mistralai/mistral-small-4-119b-2603', tier: 'A', contextWindow: 128000, priority: 12 },
+  { id: 'qwen/qwen3.5-122b-a10b', tier: 'A', contextWindow: 128000, priority: 13 },
 ];
 
 /**
  * Complete model catalog with metadata
- * Exported for use by health service and other modules
  */
 export const MODELS_WITH_METADATA: ModelMetadata[] = [
   ...S_PLUS_TIER_MODELS,
@@ -127,7 +56,6 @@ export const MODELS_WITH_METADATA: ModelMetadata[] = [
 
 /**
  * Legacy S+ models array for backward compatibility
- * @deprecated Use MODELS_WITH_METADATA instead
  */
 export const S_PLUS_MODELS: string[] = S_PLUS_TIER_MODELS.map(m => m.id);
 
@@ -166,16 +94,10 @@ export function getAllModels(): ModelConfig[] {
   return getModelCatalog();
 }
 
-/**
- * @deprecated Use getModelsByTier('S+') instead
- */
 export function getAllSPlusModels(): ModelConfig[] {
   return getModelsByTier('S+');
 }
 
-/**
- * @deprecated Use getModelsByTier('S') instead
- */
 export function getAllSModels(): ModelConfig[] {
   return getModelsByTier('S');
 }

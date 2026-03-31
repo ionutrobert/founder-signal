@@ -14,6 +14,11 @@ const SCORE_CIRCUMFERENCE = 2 * Math.PI * SCORE_RADIUS
 const sampleReport: ValidationReport = {
   score: 72,
   verdict: 'needs-work',
+  executiveSummary: {
+    plainEnglish: 'This QR code icebreaker game shows moderate potential with growing social reconnection trends post-pandemic.',
+    keyTakeaways: ['Social anxiety increased 25% during pandemic', 'QR code adoption at all-time high', 'Experience economy prioritizes authentic connections'],
+    actionItems: ['Validate demand with target venues', 'Build MVP with core QR matching', 'Test at 3-5 social venues'],
+  },
   ideaSummary: {
     title: 'QR Code Icebreaker Game for Social Events',
     oneLiner:

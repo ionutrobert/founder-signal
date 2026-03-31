@@ -123,6 +123,8 @@ export const DEFAULT_HEALTH_METRICS: HealthMetrics = {
   jitter: 0,
   spikeRate: 0,
   reliability: 1.0,
+  stabilityScore: 0,
+  lastHealthCheck: 0,
 };
 
 /**
