@@ -23,7 +23,7 @@
  */
 
 const NIM_BASE_URL = 'https://integrate.api.nvidia.com/v1';
-const HEALTH_TIMEOUT_MS = 5000;
+const HEALTH_TIMEOUT_MS = 2000; // 2s - fast health check
 
 export interface ModelConfig {
   id: string;
