@@ -99,68 +99,6 @@ WHY NOW SCORING:
 - 0-34: Bad timing - market not ready, technology immature, or cultural shift opposing
 `
 
-export function getValidationPrompt(idea: string): { system: string; user: string } {
-  const ideaText = idea.trim()
-  return {
-    system: systemPrompt,
-    user: [
-      validationPrompt.replace('{idea}', ideaText),
-      scoringPrompt,
-      mvpPrompt,
-    ].join('\n\n')
-  }
-}
-
-export function getStreamingValidationPrompt(idea: string): { system: string; user: string } {
-  const ideaText = idea.trim()
-  return {
-    system: systemPrompt,
-    user: [streamingValidationPrompt.replace('{idea}', ideaText), scoringPrompt, mvpPrompt].join('\n\n')
-  }
-}
-
-export function generateResearchPrompt(idea: string): { system: string; user: string } {
-  const ideaText = idea.trim()
-  return {
-    system: systemPrompt,
-    user: [researchPrompt.replace('${ideaText}', ideaText), scoringInstructions].join('\n\n')
-  }
-}
-
-export function generateStructuralPrompt(idea: string, researchContext: string): { system: string; user: string } {
-  const ideaText = idea.trim()
-  return {
-    system: systemPrompt,
-    user: [structuralPrompt.replace('${ideaText}', ideaText).replace('${researchContext}', researchContext), scoringInstructions].join('\n\n')
-  }
-}
-
-export function generateStrategicPrompt(idea: string, structuralContext: string): { system: string; user: string } {
-  const ideaText = idea.trim()
-  return {
-    system: systemPrompt,
-    user: [strategicPrompt.replace('${ideaText}', ideaText).replace('${structuralContext}', structuralContext), scoringInstructions, scoringPrompt, mvpPrompt].join('\n\n')
-  }
-}
-
-export function validatePromptPhase(prompt: string, expectedPhase: 'research' | 'structural' | 'strategic'): boolean {
-  const researchKeywords = ['market', 'trends', 'competitors', 'timing', 'dynamics'];
-  const structuralKeywords = ['problem', 'audience', 'market', 'monetization', 'risks'];
-  const strategicKeywords = ['positioning', 'competition', 'mvp', 'score', 'verdict'];
-  const lowerPrompt = prompt.toLowerCase();
-  switch (expectedPhase) {
-    case 'research':
-      return researchKeywords.some(k => lowerPrompt.includes(k)) && !structuralKeywords.some(k => lowerPrompt.includes(k)) && !strategicKeywords.some(k => lowerPrompt.includes(k));
-    case 'structural':
-      return structuralKeywords.some(k => lowerPrompt.includes(k)) && !strategicKeywords.some(k => lowerPrompt.includes(k));
-    case 'strategic':
-      return strategicKeywords.some(k => lowerPrompt.includes(k));
-    default:
-      return false;
-  }
-}
-}
-
 const streamingValidationPrompt = `
 You are a startup idea validator for Founder Signal. Analyze the IDEA and output ONLY newline-delimited JSON.
 
@@ -188,22 +126,10 @@ Rules:
 - Verdict: pass >= 80, needs-work 60-79, fail < 60.
 `
 
-export function getStreamingValidationPrompt(idea: string): { system: string; user: string } {
-  const ideaText = idea.trim()
-
-  return {
-    system: systemPrompt,
-    user: [streamingValidationPrompt.replace('{idea}', ideaText), scoringPrompt, mvpPrompt].join('\n\n')
-  }
-}
-
-export function generateResearchPrompt(idea: string): { system: string; user: string } {
-const ideaText = idea.trim()
-
 const researchPrompt = `
 You are a market research specialist. Analyze the IDEA and provide market context.
 
-IDEA: ${ideaText}
+IDEA: {idea}
 
 Focus on: market trends, growth signals, competitive landscape, market timing, industry dynamics.
 
@@ -222,22 +148,13 @@ Output JSON:
 Rules: Use bullet points for arrays. Be specific and data-driven. Include scores (0-100) with reasoning.
 `
 
-  return {
-    system: systemPrompt,
-    user: [researchPrompt, scoringInstructions].join('\n\n')
-  }
-}
-
-export function generateStructuralPrompt(idea: string, researchContext: string): { system: string; user: string } {
-  const ideaText = idea.trim()
-
-  const structuralPrompt = `
+const structuralPrompt = `
 You are a framework validation specialist. Analyze the IDEA using research context.
 
-IDEA: ${ideaText}
+IDEA: {idea}
 
 RESEARCH CONTEXT:
-${researchContext}
+{researchContext}
 
 Evaluate: problem clarity, target audience, market size, business model, execution risk.
 
@@ -253,22 +170,13 @@ Output JSON:
 Rules: Use bullet points for arrays. Tie severity to evidence. Include scores (0-100) with reasoning.
 `
 
-  return {
-    system: systemPrompt,
-    user: [structuralPrompt, scoringInstructions].join('\n\n')
-  }
-}
-
-export function generateStrategicPrompt(idea: string, structuralContext: string): { system: string; user: string } {
-  const ideaText = idea.trim()
-
-  const strategicPrompt = `
+const strategicPrompt = `
 You are a strategic evaluation specialist. Provide final assessment.
 
-IDEA: ${ideaText}
+IDEA: {idea}
 
 STRUCTURAL CONTEXT:
-${structuralContext}
+{structuralContext}
 
 Evaluate: executive summary, competitive advantage, positioning, MVP scope, verdict.
 
@@ -286,9 +194,47 @@ Output JSON:
 Rules: Use bullet points for arrays. Score: integer 0-100. Verdict: pass >= 80, needs-work 60-79, fail < 60.
 `
 
+export function getValidationPrompt(idea: string): { system: string; user: string } {
+  const ideaText = idea.trim()
   return {
     system: systemPrompt,
-    user: [strategicPrompt, scoringInstructions, scoringPrompt, mvpPrompt].join('\n\n')
+    user: [
+      validationPrompt.replace('{idea}', ideaText),
+      scoringPrompt,
+      mvpPrompt,
+    ].join('\n\n')
+  }
+}
+
+export function getStreamingValidationPrompt(idea: string): { system: string; user: string } {
+  const ideaText = idea.trim()
+  return {
+    system: systemPrompt,
+    user: [streamingValidationPrompt.replace('{idea}', ideaText), scoringPrompt, mvpPrompt].join('\n\n')
+  }
+}
+
+export function generateResearchPrompt(idea: string): { system: string; user: string } {
+  const ideaText = idea.trim()
+  return {
+    system: systemPrompt,
+    user: [researchPrompt.replace('{idea}', ideaText), scoringInstructions].join('\n\n')
+  }
+}
+
+export function generateStructuralPrompt(idea: string, researchContext: string): { system: string; user: string } {
+  const ideaText = idea.trim()
+  return {
+    system: systemPrompt,
+    user: [structuralPrompt.replace('{idea}', ideaText).replace('{researchContext}', researchContext), scoringInstructions].join('\n\n')
+  }
+}
+
+export function generateStrategicPrompt(idea: string, structuralContext: string): { system: string; user: string } {
+  const ideaText = idea.trim()
+  return {
+    system: systemPrompt,
+    user: [strategicPrompt.replace('{idea}', ideaText).replace('{structuralContext}', structuralContext), scoringInstructions, scoringPrompt, mvpPrompt].join('\n\n')
   }
 }
 
@@ -296,19 +242,14 @@ export function validatePromptPhase(prompt: string, expectedPhase: 'research' | 
   const researchKeywords = ['market', 'trends', 'competitors', 'timing', 'dynamics'];
   const structuralKeywords = ['problem', 'audience', 'market', 'monetization', 'risks'];
   const strategicKeywords = ['positioning', 'competition', 'mvp', 'score', 'verdict'];
-
   const lowerPrompt = prompt.toLowerCase();
-
   switch (expectedPhase) {
     case 'research':
-      return researchKeywords.some(keyword => lowerPrompt.includes(keyword)) &&
-             !structuralKeywords.some(keyword => lowerPrompt.includes(keyword)) &&
-             !strategicKeywords.some(keyword => lowerPrompt.includes(keyword));
+      return researchKeywords.some(k => lowerPrompt.includes(k)) && !structuralKeywords.some(k => lowerPrompt.includes(k)) && !strategicKeywords.some(k => lowerPrompt.includes(k));
     case 'structural':
-      return structuralKeywords.some(keyword => lowerPrompt.includes(keyword)) &&
-             !strategicKeywords.some(keyword => lowerPrompt.includes(keyword));
+      return structuralKeywords.some(k => lowerPrompt.includes(k)) && !strategicKeywords.some(k => lowerPrompt.includes(k));
     case 'strategic':
-      return strategicKeywords.some(keyword => lowerPrompt.includes(keyword));
+      return strategicKeywords.some(k => lowerPrompt.includes(k));
     default:
       return false;
   }
