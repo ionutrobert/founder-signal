@@ -110,10 +110,11 @@ export abstract class AIProvider {
 
   /**
    * Check health of a single model
+   * Uses higher max_tokens (500) for reasoning models that burn tokens on thinking
    */
   async checkModelHealth(modelId: string): Promise<HealthCheckResult> {
     const startTime = Date.now();
-    const timeout = this.config.healthTimeout || 2000;
+    const timeout = this.config.healthTimeout || 3000;
 
     try {
       const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
@@ -126,10 +127,9 @@ export abstract class AIProvider {
         body: JSON.stringify({
           model: modelId,
           messages: [
-            { role: 'system', content: 'OK' },
-            { role: 'user', content: 'Test' },
+            { role: 'user', content: 'Say hello and give me 3 bullet points about AI startups' },
           ],
-          max_tokens: 5,
+          max_tokens: 500, // Higher for reasoning models
           temperature: 0.1,
         }),
         signal: AbortSignal.timeout(timeout),
@@ -151,7 +151,8 @@ export abstract class AIProvider {
       }
 
       const data = await response.json();
-      const hasContent = data.choices?.[0]?.message?.content?.length > 0;
+      const content = data.choices?.[0]?.message?.content;
+      const hasContent = content?.length > 20; // Require meaningful response
 
       return {
         modelId,
@@ -161,7 +162,7 @@ export abstract class AIProvider {
         status: hasContent ? 'ready' : 'error',
         timestamp: Date.now(),
         contextWindow: this.config.models.find(m => m.id === modelId)?.contextWindow || 128000,
-        error: hasContent ? undefined : 'Empty response',
+        error: hasContent ? undefined : 'Empty or short response',
       };
     } catch (error) {
       const latency = Date.now() - startTime;

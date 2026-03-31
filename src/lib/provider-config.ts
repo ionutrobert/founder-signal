@@ -1,10 +1,10 @@
 /**
  * AI Provider Configuration
  * 
- * Supports multiple providers with automatic key rotation:
- * - NVIDIA NIM
- * - OpenCode Go
- * - OpenCode Zen
+ * Priority order:
+ * 1. NVIDIA NIM (free, fastest)
+ * 2. OpenCode Go (subscription, reliable backup)
+ * 3. OpenCode Zen Free (limited, last resort)
  * 
  * All providers use OpenAI-compatible API format.
  * Keys are loaded from environment variables.
@@ -21,67 +21,69 @@ import {
 /**
  * Create provider manager from environment variables
  * 
- * Supports:
- * - NVIDIA_API_KEY (required)
- * - OPENCODE_API_KEY (optional)
- * - OPENCODE_GO_BASE_URL (optional, defaults to https://api.opencode.ai/v1/go)
- * - OPENCODE_ZEN_BASE_URL (optional, defaults to https://api.opencode.ai/v1/zen)
+ * Environment variables:
+ * - NVIDIA_API_KEY - NVIDIA NIM API key
+ * - OPENCODE_API_KEY - OpenCode API key (works for both Go and Zen)
+ * - OPENCODE_GO_BASE_URL - OpenCode Go endpoint (default: https://opencode.ai/zen/go/v1)
+ * - OPENCODE_ZEN_BASE_URL - OpenCode Zen endpoint (default: https://opencode.ai/zen/v1)
  */
 export function createProviderManager(): ProviderManager {
   const providers: AIProvider[] = [];
 
-  // NVIDIA NIM Provider
+  // 1. NVIDIA NIM Provider (FREE - highest priority)
   const nvidiaKey = process.env.NVIDIA_API_KEY;
   if (nvidiaKey) {
-    console.log('[ProviderConfig] Adding NVIDIA NIM provider');
+    console.log('[ProviderConfig] Adding NVIDIA NIM provider (FREE)');
     providers.push(new NIMProvider({
       apiKey: nvidiaKey,
       models: [
         { id: 'mistralai/mistral-small-4-119b-2603', providerId: 'nvidia-nim', contextWindow: 128000 },
-        { id: 'z-ai/glm5', providerId: 'nvidia-nim', contextWindow: 128000 },
         { id: 'qwen/qwen3-coder-480b-a35b-instruct', providerId: 'nvidia-nim', contextWindow: 128000 },
         { id: 'mistralai/mistral-large-3-675b-instruct-2512', providerId: 'nvidia-nim', contextWindow: 128000 },
+        { id: 'z-ai/glm5', providerId: 'nvidia-nim', contextWindow: 128000 },
         { id: 'qwen/qwen3.5-122b-a10b', providerId: 'nvidia-nim', contextWindow: 128000 },
         { id: 'moonshotai/kimi-k2.5', providerId: 'nvidia-nim', contextWindow: 200000 },
-        { id: 'moonshotai/kimi-k2-thinking', providerId: 'nvidia-nim', contextWindow: 200000 },
         { id: 'z-ai/glm4.7', providerId: 'nvidia-nim', contextWindow: 128000 },
         { id: 'nvidia/llama-3.1-nemotron-ultra-253b-v1', providerId: 'nvidia-nim', contextWindow: 128000 },
       ],
-      healthTimeout: 2000,
+      healthTimeout: 3000,
       requestTimeout: 30000,
     }));
   }
 
-  // OpenCode Go Provider
+  // 2. OpenCode Go Provider ($5-10/month - reliable backup)
+  // These are big coding models that never error out
   const opencodeKey = process.env.OPENCODE_API_KEY;
   if (opencodeKey) {
-    console.log('[ProviderConfig] Adding OpenCode Go provider');
+    console.log('[ProviderConfig] Adding OpenCode Go provider (subscription backup)');
     providers.push(new OpenCodeGoProvider({
       apiKey: opencodeKey,
       models: [
-        { id: 'mistral-small', providerId: 'opencode-go', contextWindow: 128000 },
-        { id: 'qwen-coder', providerId: 'opencode-go', contextWindow: 128000 },
+        { id: 'minimax-m2.7', providerId: 'opencode-go', contextWindow: 128000 },
+        { id: 'minimax-m2.5', providerId: 'opencode-go', contextWindow: 128000 },
+        { id: 'kimi-k2.5', providerId: 'opencode-go', contextWindow: 200000 },
         { id: 'glm-5', providerId: 'opencode-go', contextWindow: 128000 },
       ],
-      healthTimeout: 2000,
-      requestTimeout: 30000,
-      baseUrl: process.env.OPENCODE_GO_BASE_URL || 'https://api.opencode.ai/v1/go',
+      healthTimeout: 10000, // 10s - reasoning models need more time
+      requestTimeout: 60000,
+      baseUrl: process.env.OPENCODE_GO_BASE_URL || 'https://opencode.ai/zen/go/v1',
     }));
-  }
 
-  // OpenCode Zen Provider
-  if (opencodeKey) {
-    console.log('[ProviderConfig] Adding OpenCode Zen provider');
+    // 3. OpenCode Zen Free Models (last resort)
+    console.log('[ProviderConfig] Adding OpenCode Zen provider (free models)');
     providers.push(new OpenCodeZenProvider({
       apiKey: opencodeKey,
       models: [
-        { id: 'mistral-large', providerId: 'opencode-zen', contextWindow: 128000 },
-        { id: 'qwen-max', providerId: 'opencode-zen', contextWindow: 128000 },
-        { id: 'kimi-k2', providerId: 'opencode-zen', contextWindow: 200000 },
+        { id: 'minimax-m2.5-free', providerId: 'opencode-zen', contextWindow: 128000 },
+        { id: 'qwen3.6-plus-free', providerId: 'opencode-zen', contextWindow: 128000 },
+        { id: 'big-pickle', providerId: 'opencode-zen', contextWindow: 128000 },
+        { id: 'mimo-v2-pro-free', providerId: 'opencode-zen', contextWindow: 128000 },
+        { id: 'mimo-v2-omni-free', providerId: 'opencode-zen', contextWindow: 128000 },
+        { id: 'nemotron-3-super-free', providerId: 'opencode-zen', contextWindow: 128000 },
       ],
-      healthTimeout: 2000,
-      requestTimeout: 30000,
-      baseUrl: process.env.OPENCODE_ZEN_BASE_URL || 'https://api.opencode.ai/v1/zen',
+      healthTimeout: 10000, // 10s - reasoning models need more time
+      requestTimeout: 60000,
+      baseUrl: process.env.OPENCODE_ZEN_BASE_URL || 'https://opencode.ai/zen/v1',
     }));
   }
 
