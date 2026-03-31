@@ -72,6 +72,48 @@ export class NimClientError extends Error {
 }
 
 /**
+ * Custom error classes for different failure types
+ */
+export class ModelTimeoutError extends Error {
+  constructor(modelId: string, timeout: number) {
+    super(`Model ${modelId} timed out after ${timeout}ms`);
+    this.name = 'ModelTimeoutError';
+  }
+}
+
+export class ModelEmptyResponseError extends Error {
+  constructor(modelId: string) {
+    super(`Model ${modelId} returned empty response`);
+    this.name = 'ModelEmptyResponseError';
+  }
+}
+
+export class ModelRateLimitError extends Error {
+  constructor(modelId: string) {
+    super(`Model ${modelId} rate limited`);
+    this.name = 'ModelRateLimitError';
+  }
+}
+
+export class ModelServerError extends Error {
+  constructor(modelId: string, status: number) {
+    super(`Model ${modelId} server error: ${status}`);
+    this.name = 'ModelServerError';
+  }
+}
+
+/**
+ * Check if an error is retryable
+ * @param error - Error to check
+ * @returns True if the error is retryable
+ */
+export function isRetryableError(error: Error): boolean {
+  return error instanceof ModelTimeoutError || 
+         error instanceof ModelEmptyResponseError || 
+         error instanceof ModelServerError;
+}
+
+/**
  * Create an AbortSignal with timeout
  */
 function createTimeoutSignal(timeoutMs: number): AbortSignal {
@@ -324,10 +366,18 @@ export async function executePhaseRequestStreaming(
       signal: createTimeoutSignal(timeout),
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`NIM API error: ${response.status} ${errorText}`)
+  if (!response.ok) {
+    const errorText = await response.text()
+    
+    // Classify HTTP errors
+    if (response.status === 429) {
+      throw new ModelRateLimitError(model.id)
+    } else if (response.status >= 500) {
+      throw new ModelServerError(model.id, response.status)
     }
+    
+    throw new Error(`NIM API error: ${response.status} ${errorText}`)
+  }
 
     const reader = response.body?.getReader()
     if (!reader) {
@@ -398,6 +448,11 @@ export async function executePhaseRequestStreaming(
     console.log('[executePhaseRequestStreaming] Content length:', fullContent.length)
     console.log('[executePhaseRequestStreaming] Sections completed:', Array.from(completedSections.keys()))
 
+    // Check for empty content
+    if (!fullContent || fullContent.trim().length === 0) {
+      throw new ModelEmptyResponseError(model.id)
+    }
+
     return {
       content: fullContent,
       model: model.id,
@@ -407,13 +462,16 @@ export async function executePhaseRequestStreaming(
     const latency = Date.now() - startTime
     updateModelHealth(model.id, latency, false)
 
+    // Re-throw custom errors directly
+    if (error instanceof ModelRateLimitError || 
+        error instanceof ModelServerError || 
+        error instanceof ModelEmptyResponseError) {
+      throw error
+    }
+
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
-        throw new NimClientError(
-          `Phase request timeout after ${timeout}ms`,
-          model.id,
-          error
-        )
+        throw new ModelTimeoutError(model.id, timeout)
       }
       throw new NimClientError(
         `Phase request failed: ${error.message}`,
@@ -511,6 +569,14 @@ export async function executePhaseRequest(
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[executePhaseRequest] Error response:', errorText);
+      
+      // Classify HTTP errors
+      if (response.status === 429) {
+        throw new ModelRateLimitError(model.id);
+      } else if (response.status >= 500) {
+        throw new ModelServerError(model.id, response.status);
+      }
+      
       throw new Error(`NIM API error: ${response.status} ${errorText}`);
     }
 
@@ -529,6 +595,12 @@ export async function executePhaseRequest(
     console.log('[executePhaseRequest] Response data keys:', Object.keys(data));
     console.log('[executePhaseRequest] Choices:', data.choices);
     const content = data.choices?.[0]?.message?.content || '';
+    
+    // Check for empty content
+    if (!content || content.trim().length === 0) {
+      throw new ModelEmptyResponseError(model.id);
+    }
+    
     console.log('[executePhaseRequest] Content length:', content.length);
     console.log('[executePhaseRequest] Content preview:', content.substring(0, 200));
 
@@ -548,14 +620,17 @@ export async function executePhaseRequest(
 
     updateModelHealth(model.id, latency, false);
 
+    // Re-throw custom errors directly
+    if (error instanceof ModelRateLimitError || 
+        error instanceof ModelServerError || 
+        error instanceof ModelEmptyResponseError) {
+      throw error;
+    }
+
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
         console.error('[executePhaseRequest] Timeout after', timeout, 'ms');
-        throw new NimClientError(
-          `Phase request timeout after ${timeout}ms`,
-          model.id,
-          error
-        );
+        throw new ModelTimeoutError(model.id, timeout);
       }
       console.error('[executePhaseRequest] Error message:', error.message);
       throw new NimClientError(

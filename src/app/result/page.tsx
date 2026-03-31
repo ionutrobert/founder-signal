@@ -53,18 +53,7 @@ const sectionIcons: Record<string, typeof Target> = {
   'Risks': AlertTriangle,
 }
 
-// Section order for the accordion
-const sectionOrder = [
-  'Why Now',
-  'Problem',
-  'Audience',
-  'Market',
-  'Competition',
-  'Positioning',
-  'MVP',
-  'Monetization',
-  'Risks',
-]
+// Sections are displayed in logical order in the accordion component
 
 // Map report section names to display names
 const sectionNameMap: Record<string, string> = {
@@ -657,8 +646,8 @@ function ResultPageContent() {
                     Key Takeaways
                   </h3>
                   <ul className="space-y-2">
-                    {keyTakeaways.map((takeaway, idx) => (
-                      <li key={`takeaway-${idx}-${takeaway.slice(0, 20)}`} className="flex items-start gap-2 text-sm text-slate-600">
+{keyTakeaways.map((takeaway) => (
+                <li key={`takeaway-${takeaway.slice(0, 30).replace(/\s+/g, '-')}`} className="flex items-start gap-2 text-sm text-slate-600">
                         <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-lime-500" />
                         <span>{takeaway}</span>
                       </li>
@@ -673,8 +662,8 @@ function ResultPageContent() {
                     Action Items
                   </h3>
                   <ul className="space-y-2">
-                    {actionItems.map((action, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-sm text-slate-600">
+{actionItems.map((action) => (
+              <li key={`action-${action.slice(0, 30).replace(/\s+/g, '-')}`} className="flex items-start gap-2 text-sm text-slate-600">
                         <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
                         <span>{action}</span>
                       </li>

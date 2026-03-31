@@ -57,8 +57,7 @@ import {
   generateStrategicPrompt,
 } from './prompts';
 import { executePhaseRequest, executePhaseRequestStreaming, StreamingCallbacks } from './nim-client-v2';
-import { getModelCircuitBreaker, isModelAvailable } from './circuit-breaker';
-import { refreshWorkingModel, getCachedModel, invalidateCachedModel } from './model-proxy';
+import { getRankedModels, cascadeThroughModels, refreshHealthTest } from './model-health-service';
 import { getRequestContext } from './request-context';
 
 /**
@@ -160,71 +159,74 @@ function getCurrentContext(): PhaseExecutionContext | undefined {
 }
 
 /**
- * Execute a phase with INDEFINITE retry logic and circuit breaker
- * Tests models in real-time and rotates to working ones
- * NEVER gives up - keeps retrying until success or explicit abort
- */
+* Execute a phase with cascade logic
+* Tries models in ranked order from health service
+* After 3 consecutive failures, triggers health refresh
+*/
 async function executePhaseWithRetry<T>(
   phase: ValidationPhase,
   executor: (model: ModelConfig) => Promise<T>,
   signal?: AbortSignal
 ): Promise<T> {
-  let lastError: Error | null = null;
-  let attempts = 0;
-  const maxDelay = 30000; // Max 30 second delay between retries
+  // Check if aborted
+  if (signal?.aborted) {
+    throw new Error('Phase execution aborted');
+  }
 
-  while (true) { // Infinite loop - never give up
-    attempts++;
+  // Get ranked models from health service
+  let rankedModels = await getRankedModels();
 
-    // Check if aborted
+  if (rankedModels.length === 0) {
+    throw new Error('We are experiencing high demand at the moment. All available models are currently overloaded. Please try again in a few minutes.');
+  }
+
+  console.log(`[orchestrator] ${phase}: Starting cascade through ${rankedModels.length} ranked models`);
+
+  let consecutiveFailures = 0;
+  const maxConsecutiveFailures = 3;
+
+  // Try each model in ranked order
+  for (let i = 0; i < rankedModels.length; i++) {
+    const model = rankedModels[i];
+
+    // Check if aborted before each attempt
     if (signal?.aborted) {
       throw new Error('Phase execution aborted');
     }
 
     try {
-      let model = getCachedModel();
-
-      if (!model) {
-        model = await refreshWorkingModel();
-      }
-
-      if (!isModelAvailable(model.id)) {
-        invalidateCachedModel();
-        throw new Error(`Circuit breaker open for model ${model.id}`);
-      }
-
-      const circuit = getModelCircuitBreaker(model.id);
-
-      try {
-        const result = await executor(model);
-        circuit.recordSuccess();
-        console.log(`[orchestrator] ${phase}: Success after ${attempts} attempt(s)`);
-        return result;
-      } catch (error) {
-        circuit.recordFailure();
-        invalidateCachedModel();
-        throw error;
-      }
+      console.log(`[orchestrator] ${phase}: Trying model ${i + 1}/${rankedModels.length}: ${model.id}`);
+      const result = await executor(model);
+      console.log(`[orchestrator] ${phase}: Success with model ${model.id}`);
+      return result;
     } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-      
-      // Log retry attempt
-      console.log(`[orchestrator] ${phase}: Attempt ${attempts} failed, retrying... (${lastError.message})`);
+      consecutiveFailures++;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.warn(`[orchestrator] ${phase}: Model ${model.id} failed: ${errorMessage}`);
 
-      // Calculate exponential backoff with jitter
-      const baseDelay = Math.min(1000 * Math.pow(2, attempts - 1), maxDelay);
-      const jitter = Math.random() * 1000; // Add up to 1s random jitter
-      const delay = Math.min(baseDelay + jitter, maxDelay);
-      
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(resolve, delay);
-        signal?.addEventListener('abort', () => {
-          clearTimeout(timeout);
-          reject(new Error('Phase execution aborted'));
-        });
-      });
+      // After 3 consecutive failures, trigger health refresh
+      if (consecutiveFailures >= maxConsecutiveFailures) {
+        console.log(`[orchestrator] ${phase}: ${consecutiveFailures} consecutive failures, refreshing health...`);
+        await refreshHealthTest();
+        // Get fresh ranked models
+        rankedModels = await getRankedModels();
+        consecutiveFailures = 0;
+        // Reset index to try from the beginning with new rankings
+        i = -1;
+        continue;
+      }
+
+      // If this is the last model and it failed
+      if (i === rankedModels.length - 1) {
+        throw new Error('We are experiencing high demand at the moment. All available models are currently overloaded. Please try again in a few minutes.');
+      }
+
+      console.log(`[orchestrator] ${phase}: Cascading to next model...`);
     }
   }
+
+  // Should never reach here, but just in case
+  throw new Error('We are experiencing high demand at the moment. All available models are currently overloaded. Please try again in a few minutes.');
 }
 
 /**

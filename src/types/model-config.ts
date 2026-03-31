@@ -33,6 +33,10 @@ export interface HealthMetrics {
   spikeRate: number;
   /** Reliability score (0-1, higher = more reliable) */
   reliability: number;
+  /** FCM-style stability score (0-100, higher = more stable) */
+  stabilityScore: number;
+  /** Timestamp of last health check */
+  lastHealthCheck: number;
 }
 
 /**
@@ -47,6 +51,10 @@ export interface ModelConfig {
   endpoint: string;
   /** Current health metrics */
   health: HealthMetrics;
+  /** Context window size in tokens */
+  contextWindow: number;
+  /** Model priority for selection (lower = higher priority) */
+  priority: number;
 }
 
 /**

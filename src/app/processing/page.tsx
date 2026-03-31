@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, useId } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion, useSpring, useTransform } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { 
   Clock, 
   Target, 
@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils'
 import { ActivityFeed } from '@/components/animated-list'
 import { streamAnalyzeIdea } from '@/lib/streaming-client'
 import type { StreamAnalyzeEvent } from '@/types/validation'
+import { SpinningNumber } from '@/components/spinning-text'
 
 const PENDING_IDEA_STORAGE_KEY = 'founder-signal:pending-idea'
 const ANALYSIS_RESULT_STORAGE_KEY = 'founder-signal:analysis-result'
@@ -74,88 +75,9 @@ const phaseConfig: PhaseData[] = [
   },
 ]
 
-function AnimatedScore({ value, size = 120 }: { value: number; size?: number }) {
-  const springValue = useSpring(0, { stiffness: 50, damping: 20 })
-  const displayValue = useTransform(springValue, (latest) => Math.round(latest))
-  const [currentScore, setCurrentScore] = useState(0)
-
-  useEffect(() => {
-    springValue.set(value)
-  }, [value, springValue])
-
-  useEffect(() => {
-    const unsubscribe = displayValue.on('change', (latest) => {
-      setCurrentScore(latest)
-    })
-    return unsubscribe
-  }, [displayValue])
-
-  const getScoreColor = (score: number) => {
-    if (score < 50) return 'text-red-500'
-    if (score < 80) return 'text-amber-500'
-    return 'text-emerald-500'
-  }
-
-  const getScoreRingColor = (score: number) => {
-    if (score < 50) return 'stroke-red-500'
-    if (score < 80) return 'stroke-amber-500'
-    return 'stroke-emerald-500'
-  }
-
-  const circumference = 2 * Math.PI * 45
-  const strokeDashoffset = circumference - (currentScore / 100) * circumference
-
-  return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox="0 0 100 100" className="-rotate-90" role="img" aria-label={`Score: ${currentScore} out of 100`}>
-        <title>Validation Score: {currentScore}/100</title>
-        <circle
-          cx="50"
-          cy="50"
-          r="45"
-          fill="none"
-          stroke="#e2e8f0"
-          strokeWidth="8"
-        />
-        <motion.circle
-          cx="50"
-          cy="50"
-          r="45"
-          fill="none"
-          className={getScoreRingColor(currentScore)}
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          animate={{ strokeDashoffset }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <motion.span 
-          className={cn('text-3xl font-bold tabular-nums', getScoreColor(currentScore))}
-        >
-          {currentScore}
-        </motion.span>
-        <span className="text-xs text-slate-400 font-medium">/100</span>
-      </div>
-    </div>
-  )
-}
 
 function SectionCard({ section, status }: { section: SectionData; status: 'pending' | 'active' | 'completed' }) {
   const Icon = section.icon
-  const colorClasses: Record<string, { bg: string; text: string; border: string }> = {
-    violet: { bg: 'bg-violet-50', text: 'text-violet-600', border: 'border-violet-200' },
-    blue: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200' },
-    amber: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200' },
-    emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200' },
-    rose: { bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-200' },
-    indigo: { bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-200' },
-    purple: { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-200' },
-    cyan: { bg: 'bg-cyan-50', text: 'text-cyan-600', border: 'border-cyan-200' },
-    orange: { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200' },
-  }
-  const colors = colorClasses[section.color] || { bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-200' }
 
   return (
     <motion.div
@@ -163,16 +85,16 @@ function SectionCard({ section, status }: { section: SectionData; status: 'pendi
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         'flex items-center gap-3 rounded-xl border p-3 transition-all',
-        status === 'completed' && colors.bg,
-        status === 'completed' && colors.border,
+        status === 'completed' && 'bg-white border-slate-200',
         status === 'active' && 'bg-white border-slate-200 shadow-sm',
         status === 'pending' && 'bg-slate-50/50 border-slate-100 opacity-60'
       )}
     >
       <div className={cn(
         'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
-        status === 'completed' ? colors.bg : 'bg-slate-100',
-        status === 'completed' ? colors.text : 'text-slate-400'
+        status === 'completed' && 'bg-emerald-50 text-emerald-600',
+        status === 'active' && 'bg-slate-100 text-slate-400',
+        status === 'pending' && 'bg-slate-100 text-slate-400'
       )}>
         {status === 'completed' ? (
           <Check className="w-4 h-4" />
@@ -248,25 +170,21 @@ function PhaseCard({
           <ChevronDown className="w-4 h-4 text-slate-400" />
         </motion.div>
         
-        <div className="flex-shrink-0">
-          {status === 'completed' && (
-            <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
-              <Check className="w-4 h-4 text-white" strokeWidth={3} />
-            </div>
-          )}
-          {status === 'active' && (
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-              className="w-6 h-6 flex items-center justify-center"
-            >
-              <Loader2 className="w-5 h-5 text-[#E7EB5D]" />
-            </motion.div>
-          )}
-          {status === 'pending' && (
-            <div className="w-6 h-6 rounded-full border-2 border-slate-200" />
-          )}
-        </div>
+      <div className="flex-shrink-0">
+        {status === 'completed' && (
+          <div className="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center">
+            <Check className="w-4 h-4 text-emerald-600" strokeWidth={3} />
+          </div>
+        )}
+        {status === 'active' && (
+          <div className="w-6 h-6 flex items-center justify-center">
+            <Loader2 className="w-5 h-5 text-[#E7EB5D] animate-spin" />
+          </div>
+        )}
+        {status === 'pending' && (
+          <div className="w-6 h-6 rounded-full border-2 border-slate-200" />
+        )}
+      </div>
 
         <div className="flex-1 min-w-0">
           <p className={cn(
@@ -516,7 +434,7 @@ export default function ProcessingPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center">
-                <AnimatedScore value={score} size={140} />
+                <SpinningNumber value={score} size={120} />
                 
                 <div className="mt-6 text-center space-y-2">
                   <p className={cn('text-2xl font-bold', getVerdictColor())}>

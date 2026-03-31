@@ -79,17 +79,10 @@ export default function Navigation() {
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
               
-              <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-900 hover:bg-slate-100 transition-colors"
-                    aria-label="Open menu"
-                  >
-                    <Menu className="h-6 w-6" />
-                  </Button>
-                </SheetTrigger>
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetTrigger>
+          <Menu className="h-6 w-6" />
+        </SheetTrigger>
                 <SheetContent side="right" className="w-full max-w-sm p-0">
                   <motion.div
                     initial={{ opacity: 0, x: 20 }}
