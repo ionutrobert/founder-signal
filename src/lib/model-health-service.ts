@@ -88,41 +88,38 @@ export async function refreshHealthTest(): Promise<ModelConfig[]> {
   // Get models from catalog (has endpoint field)
   const catalogModels = getModelCatalog();
 
-  // Build ranked model list with health data
-  const rankedModels = catalogModels.map(catalogModel => {
-    const healthResult = results.find(r => r.modelId === catalogModel.id);
-    const stabilityScore = healthResult?.available 
-      ? calculateStabilityScore(healthResult.latency, 1.0)
-      : 0;
-    
-    return {
-      ...catalogModel,
-      health: {
-        lastSeen: healthResult?.timestamp || 0,
-        p95Latency: healthResult?.latency || 0,
-        jitter: 0,
-        spikeRate: 0,
-        reliability: healthResult?.available ? 1.0 : 0.0,
-        stabilityScore,
-        lastHealthCheck: Date.now(),
-      },
-    };
-  });
+  // Build ranked model list - ONLY include working models
+  const rankedModels = catalogModels
+    .filter(catalogModel => {
+      const healthResult = results.find(r => r.modelId === catalogModel.id);
+      return healthResult?.available;
+    })
+    .map(catalogModel => {
+      const healthResult = results.find(r => r.modelId === catalogModel.id)!;
+      const stabilityScore = calculateStabilityScore(healthResult.latency, 1.0);
+      
+      return {
+        ...catalogModel,
+        health: {
+          lastSeen: healthResult.timestamp,
+          p95Latency: healthResult.latency,
+          jitter: 0,
+          spikeRate: 0,
+          reliability: 1.0,
+          stabilityScore,
+          lastHealthCheck: Date.now(),
+        },
+      };
+    });
 
-  // Sort: working first (by latency), then non-working (by priority)
-  rankedModels.sort((a, b) => {
-    const aWorking = a.health.reliability > 0;
-    const bWorking = b.health.reliability > 0;
-    
-    if (aWorking && !bWorking) return -1;
-    if (!aWorking && bWorking) return 1;
-    
-    if (aWorking && bWorking) {
-      return a.health.p95Latency - b.health.p95Latency;
-    }
-    
-    return a.priority - b.priority;
-  });
+  // Sort by latency (fastest first)
+  rankedModels.sort((a, b) => a.health.p95Latency - b.health.p95Latency);
+
+  if (rankedModels.length === 0) {
+    console.warn('[ModelHealthService] No working models found! Returning all models as fallback.');
+    // Fallback: return all models if none passed health check
+    return catalogModels;
+  }
 
   // Update cache
   healthCache = {
