@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils'
 import { ActivityFeed } from '@/components/animated-list'
 import { streamAnalyzeIdea } from '@/lib/streaming-client'
 import type { StreamAnalyzeEvent } from '@/types/validation'
-import { SpinningNumber } from '@/components/spinning-text'
+import { AnimatedScore } from '@/components/animated-score'
 
 const PENDING_IDEA_STORAGE_KEY = 'founder-signal:pending-idea'
 const ANALYSIS_RESULT_STORAGE_KEY = 'founder-signal:analysis-result'
@@ -434,31 +434,32 @@ export default function ProcessingPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center">
-                <SpinningNumber value={score} size={120} />
-                
-                <div className="mt-6 text-center space-y-2">
-                  <p className={cn('text-2xl font-bold', getVerdictColor())}>
-                    {score >= 80 ? 'Strong' : score >= 50 ? 'Needs Work' : 'High Risk'}
-                  </p>
+          <AnimatedScore value={score} isCalculating={!isComplete} size="lg" />
+
+          <div className="mt-6 text-center space-y-2">
+            <p className={cn('text-2xl font-bold', score === 0 && !isComplete ? 'text-slate-400' : getVerdictColor())}>
+              {score === 0 && !isComplete ? 'Calculating...' : score >= 80 ? 'Strong' : score >= 50 ? 'Needs Work' : 'Needs Work'}
+            </p>
                   <p className="text-sm text-slate-500">
                     {isComplete ? 'Analysis complete' : getStatusText()}
                   </p>
                 </div>
 
-                {/* Progress bar */}
-                <div className="w-full mt-6">
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <motion.div
-                      className={cn(
-                        'h-full rounded-full',
-                        score >= 80 ? 'bg-emerald-500' : score >= 50 ? 'bg-amber-500' : 'bg-red-500'
-                      )}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${score}%` }}
-                      transition={{ duration: 0.5, ease: 'easeOut' }}
-                    />
-                  </div>
-                </div>
+            {/* Progress bar */}
+            <div className="w-full mt-6">
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <motion.div
+                  className={cn(
+                    'h-full rounded-full',
+                    score === 0 && !isComplete ? 'bg-slate-300' :
+                    score >= 80 ? 'bg-emerald-500' : score >= 50 ? 'bg-amber-500' : 'bg-red-500'
+                  )}
+                  initial={{ width: 0 }}
+                  animate={{ width: score === 0 && !isComplete ? '0%' : `${score}%` }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                />
+              </div>
+            </div>
               </CardContent>
             </Card>
 

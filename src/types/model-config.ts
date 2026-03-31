@@ -133,30 +133,30 @@ export const TIER_CONFIGS: Record<ModelTier['tier'], ModelTier> = {
     tier: 'S+',
     priority: 1,
     maxRetries: 5,
-    timeout: 60000,
+    timeout: 30000, // Reduced from 60000 to 30000
   },
   'S': {
     tier: 'S',
     priority: 2,
     maxRetries: 4,
-    timeout: 90000,
+    timeout: 30000, // Reduced from 90000 to 30000
   },
   'A': {
     tier: 'A',
     priority: 3,
     maxRetries: 3,
-    timeout: 120000,
+    timeout: 30000, // Reduced from 120000 to 30000
   },
   'B': {
     tier: 'B',
     priority: 4,
     maxRetries: 2,
-    timeout: 150000,
+    timeout: 30000, // Reduced from 150000 to 30000
   },
   'C': {
     tier: 'C',
     priority: 5,
     maxRetries: 1,
-    timeout: 180000,
+    timeout: 30000, // Reduced from 180000 to 30000
   },
 };

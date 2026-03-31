@@ -287,19 +287,27 @@ await writeSseChunk(writer, {
 })
           await writeSseFlush(writer)
         }
-      } catch (error) {
-        hasError = true
-        const message = error instanceof Error ? error.message : 'An unexpected streaming error occurred.'
+  } catch (error) {
+    hasError = true
+    const message = error instanceof Error ? error.message : 'An unexpected streaming error occurred.'
 
-        await writeSseChunk(writer, {
-          type: 'error',
-          message,
-          recoverable: true
-        })
-      } finally {
-        clearTimeout(timeoutId)
-        await writer.close()
-      }
+    try {
+      await writeSseChunk(writer, {
+        type: 'error',
+        message,
+        recoverable: true
+      })
+    } catch {
+      // Writer might be closed already
+    }
+  } finally {
+    clearTimeout(timeoutId)
+    try {
+      await writer.close()
+    } catch {
+      // Stream might already be closed
+    }
+  }
     })
   })()
 

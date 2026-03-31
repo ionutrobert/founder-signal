@@ -55,18 +55,7 @@ const sectionIcons: Record<string, typeof Target> = {
 
 // Sections are displayed in logical order in the accordion component
 
-// Map report section names to display names
-const sectionNameMap: Record<string, string> = {
-  whyNow: 'Why Now',
-  problemClarity: 'Problem',
-  targetAudience: 'Audience',
-  marketInsight: 'Market',
-  competition: 'Competition',
-  positioning: 'Positioning',
-  mvpScope: 'MVP',
-  monetization: 'Monetization',
-  risks: 'Risks',
-}
+// Sections are displayed in logical order: Why Now → Problem → Audience → Market → Competition → Positioning → MVP → Monetization → Risks
 
 function isValidationReport(value: unknown): value is ValidationResult {
   if (!value || typeof value !== 'object') {
@@ -397,12 +386,12 @@ function generateKeyTakeaways(report: ValidationResult): string[] {
     takeaways.push('Strong overall validation score indicates viable market opportunity')
   }
   
-  if (report.problemClarity?.severity === 'High') {
+  if (report.problemClarity?.severity === 'critical') {
     takeaways.push('Clear, high-severity problem identified with strong customer pain')
   }
   
-  if (report.marketInsight?.tam && typeof report.marketInsight.tam === 'object' && 'value' in report.marketInsight.tam) {
-    const tamValue = String(report.marketInsight.tam.value)
+  if (report.marketInsight?.tam) {
+    const tamValue = String(report.marketInsight.tam)
     if (tamValue.includes('B') || tamValue.includes('T')) {
       takeaways.push('Large addressable market provides significant growth potential')
     }
