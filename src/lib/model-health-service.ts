@@ -3,6 +3,9 @@
  * 
  * Caches health results for 30 minutes.
  * Provides ranked model list for cascade execution.
+ * 
+ * OPTIMIZATION: Skip health checks on first request since we already know
+ * which models work. Only run health checks after consecutive failures.
  */
 
 import { ModelConfig } from '../types/model-config';
@@ -37,6 +40,9 @@ export function isCacheStale(): boolean {
 
 /**
  * Get ranked models from cache or run fresh test
+ * 
+ * OPTIMIZATION: On first call, return catalog models immediately without health checks.
+ * Health checks only run after failures or cache expiration.
  */
 export async function getRankedModels(): Promise<ModelConfig[]> {
   // Use cache if fresh
@@ -44,12 +50,29 @@ export async function getRankedModels(): Promise<ModelConfig[]> {
     return healthCache.rankedModels;
   }
 
-  // Run fresh health test
+  // First call: return catalog models immediately (skip health check)
+  // This avoids 45s delay from testing 9 models
+  if (!healthCache) {
+    console.log('[ModelHealthService] First call, using catalog models (no health check)');
+    const catalogModels = getModelCatalog();
+    
+    // Initialize cache with catalog models (no health data yet)
+    healthCache = {
+      results: [],
+      timestamp: Date.now(),
+      rankedModels: catalogModels,
+    };
+    
+    return catalogModels;
+  }
+
+  // Cache expired: run fresh health test
   return refreshHealthTest();
 }
 
 /**
  * Run fresh health test on all models
+ * Only called after cache expiration or consecutive failures
  */
 export async function refreshHealthTest(): Promise<ModelConfig[]> {
   console.log('[ModelHealthService] Running fresh health test...');

@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     let timeoutShown = false
     let hasError = false
 
-    // Set up timeout notification - doesn't block orchestration
+    // Set up timeout notification - only show if truly stalled (90s+)
     const timeoutId = setTimeout(() => {
       if (!phaseCompleted && !timeoutShown && !hasError) {
         timeoutShown = true
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
           message: 'We\'re experiencing high demand at the moment. Your request is still being processed - thank you for your patience!'
         })
       }
-    }, 30000)
+    }, 90000) // 90s instead of 30s
 
     runWithContext(context, async () => {
       try {
@@ -107,9 +107,6 @@ export async function POST(request: Request) {
     type: 'score',
     value: 0
   })
-
-  // Track sections completed for real progress calculation
-  let sectionsCompleted = 0
 
   const onProgress = async (event: PhaseProgressEvent) => {
     if (event.status === 'starting') {
@@ -165,6 +162,18 @@ export async function POST(request: Request) {
             })
             await writeSseFlush(writer)
           }
+
+          // Calculate incremental score from section scores
+          const totalWeight = event.sectionScores.reduce((sum, s) => sum + (s.weight || 0), 0)
+          const weightedScore = event.sectionScores.reduce((sum, s) => sum + (s.score * (s.weight || 0)), 0)
+          if (totalWeight > 0) {
+            const progressScore = Math.round((weightedScore / totalWeight) * (event.phase === 'STRUCTURAL' ? 0.6 : 1.0))
+            await writeSseChunk(writer, {
+              type: 'score',
+              value: Math.min(progressScore, 100)
+            })
+            await writeSseFlush(writer)
+          }
         }
 
         // Emit phase complete event
@@ -183,55 +192,29 @@ export async function POST(request: Request) {
           message: event.message || `Completed ${event.phase} phase`
         })
 
-      // Calculate real score based on sections completed
-      if (event.sections) {
-        const sectionCount = Object.keys(event.sections).length
-        sectionsCompleted += sectionCount
-        
-        // Calculate progress: research=0%, structural=33%, strategic=66% base
-        // Plus incremental progress for each section
-        let baseScore = 0
-        if (event.phase === 'STRUCTURAL') {
-          baseScore = 33
-        } else if (event.phase === 'STRATEGIC') {
-          baseScore = 66
-        }
-        
-        // Incremental score within phase
-        const phaseSections = event.phase === 'STRUCTURAL' ? 5 : 4
-        const phaseProgress = sectionCount / phaseSections
-        const phaseScore = event.phase === 'RESEARCH' ? 33 : 
-                          event.phase === 'STRUCTURAL' ? 33 : 
-                          34
-        
-        const score = Math.round(baseScore + (phaseProgress * phaseScore))
-        
-        await writeSseChunk(writer, {
-          type: 'score',
-          value: Math.min(score, 100)
-        })
-        await writeSseFlush(writer)
-
-        for (const [sectionName, sectionData] of Object.entries(event.sections)) {
-          if (sectionData) {
-            await writeSseChunk(writer, {
-              type: 'section',
-              name: sectionName as ValidationSectionName,
-              data: sectionData
-            } as StreamAnalyzeEvent)
-            await writeSseFlush(writer)
+        // Handle sections if present
+        if (event.sections) {
+          for (const [sectionName, sectionData] of Object.entries(event.sections)) {
+            if (sectionData) {
+              await writeSseChunk(writer, {
+                type: 'section',
+                name: sectionName as ValidationSectionName,
+                data: sectionData
+              } as StreamAnalyzeEvent)
+              await writeSseFlush(writer)
+            }
           }
         }
-      }
 
-      if (event.phase === 'STRATEGIC' && event.finalScore !== undefined) {
-        await writeSseChunk(writer, {
-          type: 'score',
-          value: event.finalScore
-        })
-        await writeSseFlush(writer)
-      }
-    } else if (event.status === 'failed') {
+        // Emit final score from strategic phase
+        if (event.phase === 'STRATEGIC' && event.finalScore !== undefined) {
+          await writeSseChunk(writer, {
+            type: 'score',
+            value: event.finalScore
+          })
+          await writeSseFlush(writer)
+        }
+      } else if (event.status === 'failed') {
       await writeSseChunk(writer, {
         type: 'status',
         stage: 'streaming',
