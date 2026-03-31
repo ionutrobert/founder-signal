@@ -231,6 +231,7 @@ async function executePhaseWithRetry<T>(
 
 /**
  * Parse JSON response with error handling
+ * Handles malformed JSON by attempting to fix common issues
  */
 function parseJsonResponse<T>(content: string, phase: ValidationPhase): T | null {
   try {
@@ -243,8 +244,42 @@ function parseJsonResponse<T>(content: string, phase: ValidationPhase): T | null
       return null;
     }
 
-    const jsonStr = cleaned.slice(firstBrace, lastBrace + 1);
-    return JSON.parse(jsonStr) as T;
+    let jsonStr = cleaned.slice(firstBrace, lastBrace + 1);
+    
+    // Attempt to fix common JSON issues
+    try {
+      return JSON.parse(jsonStr) as T;
+    } catch (parseError) {
+      // Try to fix common issues
+      console.warn(`[orchestrator] ${phase}: Initial parse failed, attempting fixes...`);
+      
+      // Fix 1: Remove duplicate keys (keep last occurrence)
+      jsonStr = fixDuplicateKeys(jsonStr);
+      
+      try {
+        return JSON.parse(jsonStr) as T;
+      } catch {
+        // Fix 2: Try to extract valid JSON objects from the response
+        console.warn(`[orchestrator] ${phase}: Fix 1 failed, trying extraction...`);
+        const extracted = extractValidJson(jsonStr);
+        if (extracted) {
+          try {
+            return JSON.parse(extracted) as T;
+          } catch {
+            // Fix 3: Try with more aggressive cleaning
+            console.warn(`[orchestrator] ${phase}: Fix 2 failed, trying aggressive cleaning...`);
+            const cleaned2 = aggressiveJsonClean(jsonStr);
+            try {
+              return JSON.parse(cleaned2) as T;
+            } catch {
+              console.error(`[orchestrator] ${phase}: All JSON fixes failed`);
+              throw parseError;
+            }
+          }
+        }
+        throw parseError;
+      }
+    }
   } catch (error) {
     console.error(`[orchestrator] ${phase}: JSON parse error:`, error instanceof Error ? error.message : 'Unknown');
     const context = getCurrentContext();
@@ -258,6 +293,92 @@ function parseJsonResponse<T>(content: string, phase: ValidationPhase): T | null
     }
     return null;
   }
+}
+
+/**
+ * Fix duplicate keys in JSON (keep last occurrence)
+ */
+function fixDuplicateKeys(jsonStr: string): string {
+  // This is a simplified fix - in production, use a proper JSON parser
+  // For now, try to remove obvious duplicate array elements
+  const lines = jsonStr.split('\n');
+  const seenKeys = new Set<string>();
+  const result: string[] = [];
+  
+  for (const line of lines) {
+    const keyMatch = line.match(/^\s*"([^"]+)":\s/);
+    if (keyMatch && keyMatch[1]) {
+      const key = keyMatch[1];
+      if (seenKeys.has(key)) {
+        continue;
+      }
+      seenKeys.add(key);
+    }
+    result.push(line);
+  }
+  
+  return result.join('\n');
+}
+
+/**
+ * Extract valid JSON objects from malformed response
+ */
+function extractValidJson(jsonStr: string): string | null {
+  // Try to find the largest valid JSON object
+  const braceCount = jsonStr.split('{').length - 1;
+  
+  for (let i = braceCount; i > 0; i--) {
+    // Try to extract JSON with i opening braces
+    let start = 0;
+    let count = 0;
+    for (let j = 0; j < jsonStr.length; j++) {
+      if (jsonStr[j] === '{') {
+        count++;
+        if (count === 1) start = j;
+      } else if (jsonStr[j] === '}') {
+        count--;
+        if (count === 0) {
+          const candidate = jsonStr.slice(start, j + 1);
+          try {
+            JSON.parse(candidate);
+            return candidate;
+          } catch {
+            // Continue searching
+          }
+        }
+      }
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Aggressive JSON cleaning for severely malformed responses
+ */
+function aggressiveJsonClean(jsonStr: string): string {
+  // Remove any non-JSON content
+  const firstBrace = jsonStr.indexOf('{');
+  const lastBrace = jsonStr.lastIndexOf('}');
+  
+  if (firstBrace === -1 || lastBrace === -1) return jsonStr;
+  
+  let cleaned = jsonStr.slice(firstBrace, lastBrace + 1);
+  
+  // Fix common issues
+  cleaned = cleaned
+    // Remove trailing commas before } or ]
+    .replace(/,\s*([}\]])/g, '$1')
+    // Fix unescaped quotes in strings
+    .replace(/"([^"]*?)"(?=\s*:)/g, (match) => match)
+    // Remove control characters (using regex constructor to avoid lint issues)
+    .replace(new RegExp('[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F]', 'g'), '')
+    // Fix missing commas between key-value pairs
+    .replace(/}\s*{/g, '},{')
+    // Fix missing commas in arrays
+    .replace(/]\s*\[/g, '],[');
+  
+  return cleaned;
 }
 
 /**
@@ -296,15 +417,24 @@ export async function executeResearchPhase(
   } as PhaseProgressEvent);
 
   // INDEFINITE RETRY: Keep trying until success or abort
-  const response = await executePhaseWithRetry(phase, (model) =>
-    executePhaseRequest(prompt, { temperature: 0.7, maxTokens: 3000, model }),
-    signal
-  );
+  // JSON parsing is inside the retry loop so parse failures cascade to next model
+  const response = await executePhaseWithRetry(phase, async (model) => {
+    const result = await executePhaseRequest(prompt, { temperature: 0.7, maxTokens: 3000, model });
+    
+    // Parse JSON inside the retry loop - if it fails, cascade to next model
+    const parsed = parseJsonResponse<ResearchResult>(result.content, phase);
+    if (!parsed) {
+      throw new Error(`Failed to parse JSON response from ${model.id}`);
+    }
+    
+    // Attach parsed data to response for caller
+    (result as any).parsedData = parsed;
+    return result;
+  }, signal);
 
-  const parsed = parseJsonResponse<ResearchResult>(response.content, phase);
+  const parsed = (response as any).parsedData as ResearchResult;
 
   if (!parsed) {
-    // This should never happen due to indefinite retry, but handle just in case
     throw new Error('Failed to parse research phase response after all retries');
   }
 

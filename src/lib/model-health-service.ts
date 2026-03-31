@@ -1,11 +1,15 @@
 /**
- * Model Health Service - Uses nim-health-client for testing
+ * Model Health Service - Dynamic Model Selection
  * 
- * Caches health results for 30 minutes.
- * Provides ranked model list for cascade execution.
+ * Tests all available models and selects the fastest working one.
+ * Never hardcodes model selection - always uses real-time health data.
  * 
- * OPTIMIZATION: Skip health checks on first request since we already know
- * which models work. Only run health checks after consecutive failures.
+ * Flow:
+ * 1. Test all models in parallel (5s timeout each)
+ * 2. Rank by: working status → latency → context window
+ * 3. Use fastest working model
+ * 4. Cascade to next fastest on failure
+ * 5. Re-test after 3 consecutive failures or 30min cache expiry
  */
 
 import { ModelConfig } from '../types/model-config';
@@ -39,51 +43,47 @@ export function isCacheStale(): boolean {
 }
 
 /**
- * Get ranked models from cache or run fresh test
+ * Get ranked models - ALWAYS tests first to find fastest working model
  * 
- * OPTIMIZATION: On first call, return catalog models immediately without health checks.
- * Health checks only run after failures or cache expiration.
+ * This ensures we never use a hardcoded model order.
+ * The system dynamically discovers which models are working and fastest.
  */
 export async function getRankedModels(): Promise<ModelConfig[]> {
   // Use cache if fresh
   if (healthCache && !isCacheStale()) {
+    console.log(`[ModelHealthService] Using cached health data (${healthCache.results.length} models tested)`);
     return healthCache.rankedModels;
   }
 
-  // First call: return catalog models immediately (skip health check)
-  // This avoids 45s delay from testing 9 models
-  if (!healthCache) {
-    console.log('[ModelHealthService] First call, using catalog models (no health check)');
-    const catalogModels = getModelCatalog();
-    
-    // Initialize cache with catalog models (no health data yet)
-    healthCache = {
-      results: [],
-      timestamp: Date.now(),
-      rankedModels: catalogModels,
-    };
-    
-    return catalogModels;
-  }
-
-  // Cache expired: run fresh health test
+  // ALWAYS run fresh health test to find fastest working model
+  console.log('[ModelHealthService] Running health test to find fastest working model...');
   return refreshHealthTest();
 }
 
 /**
  * Run fresh health test on all models
- * Only called after cache expiration or consecutive failures
+ * Tests all models in parallel and ranks by actual performance
  */
 export async function refreshHealthTest(): Promise<ModelConfig[]> {
-  console.log('[ModelHealthService] Running fresh health test...');
+  const startTime = Date.now();
+  console.log('[ModelHealthService] Testing all models in parallel...');
   
   const results = await testAllModels();
+  const testDuration = Date.now() - startTime;
+  
   const workingResults = results.filter(r => r.available);
   
+  console.log(`[ModelHealthService] Health test completed in ${testDuration}ms`);
   console.log(`[ModelHealthService] Working models: ${workingResults.length}/${results.length}`);
-  workingResults.forEach(r => {
-    console.log(`  - ${r.modelId}: ${r.latency}ms`);
-  });
+  
+  if (workingResults.length > 0) {
+    console.log('[ModelHealthService] Ranked by speed:');
+    workingResults.forEach((r, i) => {
+      console.log(`  ${i + 1}. ${r.modelId}: ${r.latency}ms`);
+    });
+  } else {
+    console.warn('[ModelHealthService] No working models found!');
+  }
 
   // Get models from catalog (has endpoint field)
   const catalogModels = getModelCatalog();
