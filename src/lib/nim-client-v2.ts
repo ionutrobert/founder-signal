@@ -3,6 +3,12 @@
  *
  * This module provides a refactored NIM client that uses the ModelConfig system
  * with dynamic model rotation, health tracking, and tier-based selection.
+ * 
+ * Designed for future extraction into standalone package:
+ * - Clean separation of concerns
+ * - Configurable endpoints and timeouts
+ * - Comprehensive error handling
+ * - Performance tracking
  */
 
 import { ModelConfig } from '../types/model-config';
@@ -35,6 +41,12 @@ export interface NimResponse {
   model: string;
   /** Request latency in milliseconds */
   latency: number;
+  /** Token usage information */
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
 }
 
 /**
@@ -45,6 +57,12 @@ export interface NimStreamResponse {
   model: string;
   /** Request latency in milliseconds */
   latency: number;
+  /** Token usage information */
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
 }
 
 /**
@@ -104,13 +122,65 @@ export class ModelServerError extends Error {
 
 /**
  * Check if an error is retryable
- * @param error - Error to check
- * @returns True if the error is retryable
+ * Retryable errors: timeouts, empty responses, server errors
+ * Non-retryable: rate limits (need backoff), client errors
  */
 export function isRetryableError(error: Error): boolean {
-  return error instanceof ModelTimeoutError || 
-         error instanceof ModelEmptyResponseError || 
+  return error instanceof ModelTimeoutError ||
+         error instanceof ModelEmptyResponseError ||
          error instanceof ModelServerError;
+}
+
+/**
+ * Check if error indicates model is overloaded vs broken
+ */
+export function isModelOverloaded(error: Error): boolean {
+  return error instanceof ModelTimeoutError ||
+         error instanceof ModelRateLimitError;
+}
+
+/**
+ * Streaming callbacks for section detection
+ */
+export interface StreamingCallbacks {
+  /** Called when a section is detected in the stream */
+  onSection?: (key: string, data: unknown, index: number) => void | Promise<void>;
+  /** Called when streaming is complete */
+  onComplete?: () => void | Promise<void>;
+  /** Called on error */
+  onError?: (error: Error) => void | Promise<void>;
+}
+
+/**
+ * Response from non-streaming NIM request
+ */
+export interface NimResponse {
+  /** Generated content */
+  content: string;
+  /** Model ID used for generation */
+  model: string;
+  /** Request latency in milliseconds */
+  latency: number;
+}
+
+/**
+ * Response from streaming NIM request
+ */
+export interface NimStreamResponse {
+  /** Model ID used for generation */
+  model: string;
+  /** Request latency in milliseconds */
+  latency: number;
+}
+
+/**
+ * Phase-specific prompt structure
+ */
+export interface PhasePrompt {
+  /** System prompt */
+  system: string;
+  /** User prompt */
+  user: string;
 }
 
 /**
