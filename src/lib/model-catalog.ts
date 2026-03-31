@@ -25,9 +25,8 @@ export interface ModelMetadata {
  * - qwen/qwen3.5-122b-a10b: 2011ms (works at 5s)
  */
 const S_PLUS_TIER_MODELS: ModelMetadata[] = [
-  { id: 'mistralai/mistral-small-4-119b-2603', tier: 'S+', contextWindow: 128000, priority: 1 },
-  { id: 'qwen/qwen3-coder-480b-a35b-instruct', tier: 'S+', contextWindow: 128000, priority: 2 },
-  { id: 'mistralai/mistral-large-3-675b-instruct-2512', tier: 'S+', contextWindow: 128000, priority: 3 },
+  { id: 'qwen/qwen3-coder-480b-a35b-instruct', tier: 'S+', contextWindow: 128000, priority: 1 },
+  { id: 'mistralai/mistral-small-4-119b-2603', tier: 'S+', contextWindow: 128000, priority: 2 },
 ];
 
 /**
@@ -35,6 +34,7 @@ const S_PLUS_TIER_MODELS: ModelMetadata[] = [
  * These are tried if S+ models fail
  */
 const S_TIER_MODELS: ModelMetadata[] = [
+  { id: 'mistralai/mistral-large-3-675b-instruct-2512', tier: 'S', contextWindow: 128000, priority: 3 },
   { id: 'z-ai/glm5', tier: 'S', contextWindow: 128000, priority: 4 },
   { id: 'qwen/qwen3.5-122b-a10b', tier: 'S', contextWindow: 128000, priority: 5 },
   { id: 'moonshotai/kimi-k2.5', tier: 'S', contextWindow: 200000, priority: 6 },
