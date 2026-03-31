@@ -13,33 +13,34 @@ export interface ModelMetadata {
 }
 
 /**
- * S+ Tier Models - VERIFIED WORKING on NVIDIA NIM
+ * S+ Tier Models - High-quality coding models with large context windows
  * 
- * PERFORMANCE UPDATE (2026-03-31 14:30 UTC):
- * - mistralai/mistral-small-4-119b-2603: 1353ms (fastest now)
- * - qwen/qwen3.5-122b-a10b: 1773ms
- * - qwen/qwen3-coder-480b-a35b-instruct: 2265ms (slower than before)
+ * NOTE: The actual model selection is done dynamically by the health service.
+ * This catalog just defines which models are available for testing.
  * 
- * INTERMITTENT/TIMING OUT:
- * - mistralai/mistral-large-3-675b-instruct-2512: 10s timeout (moved to S tier)
+ * PERFORMANCE DATA (2026-03-31):
+ * - mistralai/mistral-small-4-119b-2603: 601ms (fastest)
+ * - z-ai/glm5: 849ms
+ * - qwen/qwen3-coder-480b-a35b-instruct: 1040ms
+ * - mistralai/mistral-large-3-675b-instruct-2512: 3043ms
+ * - qwen/qwen3.5-122b-a10b: 3715ms
+ * - moonshotai/kimi-k2.5: timeout (5s)
  */
 const S_PLUS_TIER_MODELS: ModelMetadata[] = [
-  // Primary models - consistently working
-  { id: 'qwen/qwen3-coder-480b-a35b-instruct', tier: 'S+', contextWindow: 128000, priority: 1 },
-  { id: 'mistralai/mistral-small-4-119b-2603', tier: 'S+', contextWindow: 128000, priority: 2 },
-  { id: 'qwen/qwen3.5-122b-a10b', tier: 'S+', contextWindow: 128000, priority: 3 },
+  { id: 'mistralai/mistral-small-4-119b-2603', tier: 'S+', contextWindow: 128000, priority: 1 },
+  { id: 'z-ai/glm5', tier: 'S+', contextWindow: 128000, priority: 2 },
+  { id: 'qwen/qwen3-coder-480b-a35b-instruct', tier: 'S+', contextWindow: 128000, priority: 3 },
+  { id: 'mistralai/mistral-large-3-675b-instruct-2512', tier: 'S+', contextWindow: 128000, priority: 4 },
+  { id: 'qwen/qwen3.5-122b-a10b', tier: 'S+', contextWindow: 128000, priority: 5 },
 ];
 
 /**
- * S Tier Models - Intermittent, may recover
- * These models sometimes work, sometimes timeout or return empty
+ * S Tier Models - Good quality with large context windows
  */
 const S_TIER_MODELS: ModelMetadata[] = [
-  { id: 'mistralai/mistral-large-3-675b-instruct-2512', tier: 'S', contextWindow: 128000, priority: 4 },
-  { id: 'z-ai/glm5', tier: 'S', contextWindow: 128000, priority: 5 },
   { id: 'moonshotai/kimi-k2.5', tier: 'S', contextWindow: 200000, priority: 6 },
-  { id: 'z-ai/glm4.7', tier: 'S', contextWindow: 128000, priority: 7 },
-  { id: 'moonshotai/kimi-k2-thinking', tier: 'S', contextWindow: 200000, priority: 8 },
+  { id: 'moonshotai/kimi-k2-thinking', tier: 'S', contextWindow: 200000, priority: 7 },
+  { id: 'z-ai/glm4.7', tier: 'S', contextWindow: 128000, priority: 8 },
 ];
 
 /**
