@@ -13,31 +13,30 @@ export interface ModelMetadata {
 }
 
 /**
- * S+ Tier Models - High-quality coding models with large context windows
+ * S+ Tier Models - Verified working with 2s health check timeout
  * 
- * NOTE: The actual model selection is done dynamically by the health service.
- * This catalog just defines which models are available for testing.
+ * PERFORMANCE DATA (2026-03-31 15:00 UTC, 2s timeout):
+ * - mistralai/mistral-small-4-119b-2603: 635ms ✅
+ * - qwen/qwen3-coder-480b-a35b-instruct: 1131ms ✅
+ * - mistralai/mistral-large-3-675b-instruct-2512: 1238ms ✅
  * 
- * PERFORMANCE DATA (2026-03-31):
- * - mistralai/mistral-small-4-119b-2603: 601ms (fastest)
- * - z-ai/glm5: 849ms
- * - qwen/qwen3-coder-480b-a35b-instruct: 1040ms
- * - mistralai/mistral-large-3-675b-instruct-2512: 3043ms
- * - qwen/qwen3.5-122b-a10b: 3715ms
- * - moonshotai/kimi-k2.5: timeout (5s)
+ * TIMED OUT AT 2s (moved to S tier):
+ * - z-ai/glm5: 2014ms (works at 5s)
+ * - qwen/qwen3.5-122b-a10b: 2011ms (works at 5s)
  */
 const S_PLUS_TIER_MODELS: ModelMetadata[] = [
   { id: 'mistralai/mistral-small-4-119b-2603', tier: 'S+', contextWindow: 128000, priority: 1 },
-  { id: 'z-ai/glm5', tier: 'S+', contextWindow: 128000, priority: 2 },
-  { id: 'qwen/qwen3-coder-480b-a35b-instruct', tier: 'S+', contextWindow: 128000, priority: 3 },
-  { id: 'mistralai/mistral-large-3-675b-instruct-2512', tier: 'S+', contextWindow: 128000, priority: 4 },
-  { id: 'qwen/qwen3.5-122b-a10b', tier: 'S+', contextWindow: 128000, priority: 5 },
+  { id: 'qwen/qwen3-coder-480b-a35b-instruct', tier: 'S+', contextWindow: 128000, priority: 2 },
+  { id: 'mistralai/mistral-large-3-675b-instruct-2512', tier: 'S+', contextWindow: 128000, priority: 3 },
 ];
 
 /**
- * S Tier Models - Good quality with large context windows
+ * S Tier Models - Work with longer timeout (5s)
+ * These are tried if S+ models fail
  */
 const S_TIER_MODELS: ModelMetadata[] = [
+  { id: 'z-ai/glm5', tier: 'S', contextWindow: 128000, priority: 4 },
+  { id: 'qwen/qwen3.5-122b-a10b', tier: 'S', contextWindow: 128000, priority: 5 },
   { id: 'moonshotai/kimi-k2.5', tier: 'S', contextWindow: 200000, priority: 6 },
   { id: 'moonshotai/kimi-k2-thinking', tier: 'S', contextWindow: 200000, priority: 7 },
   { id: 'z-ai/glm4.7', tier: 'S', contextWindow: 128000, priority: 8 },
