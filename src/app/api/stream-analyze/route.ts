@@ -70,6 +70,12 @@ export async function POST(request: Request) {
 
   const stream = new TransformStream()
   const writer = stream.writable.getWriter()
+  const abortController = new AbortController()
+
+  // Handle client disconnect
+  request.signal.addEventListener('abort', () => {
+    abortController.abort()
+  })
 
   void (async () => {
     const context = createRequestContext(trimmedIdea)
@@ -234,7 +240,7 @@ export async function POST(request: Request) {
     }
   }
 
-        const result = await orchestrate3PhaseValidation(trimmedIdea, onProgress)
+        const result = await orchestrate3PhaseValidation(trimmedIdea, onProgress, abortController.signal)
 
         phaseCompleted = true
 

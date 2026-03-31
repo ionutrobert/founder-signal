@@ -56,7 +56,7 @@ import {
   generateStructuralPrompt,
   generateStrategicPrompt,
 } from './prompts';
-import { executePhaseRequest, executePhaseRequestStreaming, NimClientError, StreamingCallbacks } from './nim-client-v2';
+import { executePhaseRequest, executePhaseRequestStreaming, StreamingCallbacks } from './nim-client-v2';
 import { getModelCircuitBreaker, isModelAvailable } from './circuit-breaker';
 import { refreshWorkingModel, getCachedModel, invalidateCachedModel } from './model-proxy';
 import { getRequestContext } from './request-context';
