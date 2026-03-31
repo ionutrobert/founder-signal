@@ -119,9 +119,9 @@ export default function Footer() {
 
         <div className="mt-12 pt-8 border-t border-slate-200">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-slate-600">
-              © {new Date().getFullYear()} Founder Signal. All rights reserved.
-            </p>
+          <p className="text-sm text-slate-600">
+            © 2026 Founder Signal. All rights reserved.
+          </p>
             <div className="flex items-center gap-4">
               {socialLinks.map((social) => (
                 <Link

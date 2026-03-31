@@ -33,7 +33,9 @@ export default function HomePage() {
     setError(null)
 
     try {
-      window.sessionStorage.setItem(PENDING_IDEA_STORAGE_KEY, idea.trim())
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(PENDING_IDEA_STORAGE_KEY, idea.trim())
+      }
       router.push('/processing')
     } catch {
       setError('Unable to start the live analysis. Please try again.')

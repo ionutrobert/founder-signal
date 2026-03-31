@@ -39,7 +39,13 @@ export function RecentAnalyses() {
   }, [])
 
   const clearHistory = () => {
-    localStorage.removeItem(HISTORY_KEY)
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(HISTORY_KEY)
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
     setHistory([])
   }
 

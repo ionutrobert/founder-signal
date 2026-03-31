@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { AnimatedScore } from '@/components/shadcnspace'
+import { useId } from 'react'
 
 type GaugeSize = 'sm' | 'md' | 'lg'
 
@@ -27,10 +28,6 @@ function getScoreColor(score: number): string {
   return '#ef4444'
 }
 
-function getGradientId(): string {
-  return `gauge-gradient-${Math.random().toString(36).slice(2, 9)}`
-}
-
 export function ScoreGauge({
   score,
   size = 'md',
@@ -41,7 +38,7 @@ export function ScoreGauge({
   const config = sizeConfig[size]
   const radius = (config.dimensions - config.strokeWidth) / 2 - 4
   const clampedScore = Math.max(0, Math.min(100, Math.round(score)))
-  const gradientId = getGradientId()
+  const gradientId = `gauge-gradient-${useId()}`
   const color = getScoreColor(clampedScore)
 
   const circumference = 2 * Math.PI * radius

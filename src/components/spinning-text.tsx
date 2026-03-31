@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useId } from "react";
 import { motion, useSpring, useTransform, MotionValue } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -84,12 +84,12 @@ function DigitColumn({
   size: number;
 }) {
   const digits = value.toString().split("");
-  const animationId = useRef(Math.random().toString(36).substring(2, 9));
+  const animationId = useId();
 
   return (
     <div className="flex">
       {digits.map((digit, index) => {
-        const digitKey = `${animationId.current}-col-${digit}-${index}`;
+        const digitKey = `${animationId}-col-${digit}-${index}`;
         return (
           <div
             key={digitKey}
@@ -112,7 +112,7 @@ function DigitColumn({
             >
               {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                 <div
-                  key={`${animationId.current}-num-${num}`}
+                  key={`${animationId}-num-${num}`}
                   style={{
                     height: size,
                     lineHeight: `${size}px`,

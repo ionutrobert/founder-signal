@@ -43,8 +43,7 @@ export function ShareButtons({ resultId, title }: ShareButtonsProps) {
           <body>
             <h1>Founder Signal Report</h1>
             <h2>${title}</h2>
-            <p>Generated on ${new Date().toLocaleDateString()}</p>
-            <hr />
+        <hr />
             <p>View full report at: ${shareUrl}</p>
           </body>
         </html>

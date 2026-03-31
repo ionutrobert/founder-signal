@@ -502,20 +502,22 @@ function ResultPageContent() {
       return
     }
 
-    const storedData = window.sessionStorage.getItem(ANALYSIS_RESULT_STORAGE_KEY)
+    if (typeof window !== 'undefined') {
+      const storedData = window.sessionStorage.getItem(ANALYSIS_RESULT_STORAGE_KEY)
 
-    if (storedData) {
-      try {
-        const parsed = JSON.parse(storedData) as unknown
-        if (isValidationReport(parsed)) {
-          setReport(parsed)
-          setIsLoading(false)
-          return
+      if (storedData) {
+        try {
+          const parsed = JSON.parse(storedData) as unknown
+          if (isValidationReport(parsed)) {
+            setReport(parsed)
+            setIsLoading(false)
+            return
+          }
+        } catch {
+          // Continue to error
         }
-      } catch {
-        // Continue to error
+        window.sessionStorage.removeItem(ANALYSIS_RESULT_STORAGE_KEY)
       }
-      window.sessionStorage.removeItem(ANALYSIS_RESULT_STORAGE_KEY)
     }
 
     if (!resultId) {

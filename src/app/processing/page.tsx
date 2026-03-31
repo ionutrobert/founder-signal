@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useId } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, useSpring, useTransform } from 'framer-motion'
 import { 
@@ -324,9 +324,12 @@ export default function ProcessingPage() {
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set(['research']))
   const [isComplete, setIsComplete] = useState(false)
 
+  const baseId = useId()
+  const counterRef = useRef(0)
   const getActivityId = useCallback(() => {
-    return `activity-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-  }, [])
+    counterRef.current += 1
+    return `${baseId}-activity-${counterRef.current}`
+  }, [baseId])
 
   useEffect(() => {
     const storedIdea = window.sessionStorage.getItem(PENDING_IDEA_STORAGE_KEY)
