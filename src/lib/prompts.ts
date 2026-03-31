@@ -412,6 +412,7 @@ STRUCTURAL CONTEXT:
 ${structuralContext}
 
 Evaluate strategic positioning and viability:
+- Executive summary synthesizing all analysis phases
 - Competitive advantage and differentiation
 - Positioning and messaging
 - MVP scope and execution plan
@@ -419,6 +420,11 @@ Evaluate strategic positioning and viability:
 
 Output a JSON object with:
 {
+  "executiveSummary": {
+    "plainEnglish": string,
+    "keyTakeaways": string[],
+    "actionItems": string[]
+  },
   "ideaSummary": {
     "title": string,
     "oneLiner": string,

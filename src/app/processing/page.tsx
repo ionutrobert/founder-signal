@@ -194,54 +194,34 @@ function SectionCard({ section, status }: { section: SectionData; status: 'pendi
         )}>
           {section.name}
         </p>
-        {section.score !== null && (
-          <p className={cn('text-xs font-semibold', colors.text)}>
-            {section.score}/100
-          </p>
-        )}
       </div>
-      {section.score !== null && (
-        <div className={cn('h-1.5 w-12 rounded-full bg-slate-200 overflow-hidden')}>
-          <motion.div 
-            className={cn('h-full rounded-full', colors.bg.replace('bg-', 'bg-').replace('50', '500'))}
-            initial={{ width: 0 }}
-            animate={{ width: `${section.score}%` }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-          />
-        </div>
-      )}
     </motion.div>
   )
 }
 
-function PhaseCard({ 
-  phase, 
+function PhaseCard({
+  phase,
   currentPhase,
   expanded,
-  onToggle,
-  sectionScores 
-}: { 
+  onToggle
+}: {
   phase: PhaseData
   currentPhase: Phase
   expanded: boolean
   onToggle: () => void
-  sectionScores: Record<string, number>
 }) {
   const getPhaseStatus = () => {
     const order = ['research', 'structural', 'strategic', 'complete']
     const currentIndex = order.indexOf(currentPhase)
     const phaseIndex = order.indexOf(phase.id)
-    
+
     if (phaseIndex < currentIndex) return 'completed'
     if (phaseIndex === currentIndex) return 'active'
     return 'pending'
   }
 
   const status = getPhaseStatus()
-  const sections = phase.sections.map(s => ({
-    ...s,
-    score: sectionScores[s.id] ?? null
-  }))
+  const sections = phase.sections
 
   return (
     <motion.div
@@ -315,12 +295,12 @@ function PhaseCard({
         >
           <div className="p-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
             {sections.map((section) => (
-              <SectionCard 
-                key={section.id} 
+              <SectionCard
+                key={section.id}
                 section={section}
                 status={
-                  section.score !== null ? 'completed' : 
-                  status === 'active' ? 'active' : 
+                  status === 'completed' ? 'completed' :
+                  status === 'active' ? 'active' :
                   'pending'
                 }
               />
@@ -340,7 +320,7 @@ export default function ProcessingPage() {
   const [score, setScore] = useState(0)
   const [currentPhase, setCurrentPhase] = useState<Phase>('research')
   const [activityMessages, setActivityMessages] = useState<{ id: string; message: string }[]>([])
-  const [sectionScores, setSectionScores] = useState<Record<string, number>>({})
+
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set(['research']))
   const [isComplete, setIsComplete] = useState(false)
 
@@ -364,7 +344,6 @@ export default function ProcessingPage() {
     const controller = new AbortController()
     setScore(0)
     setActivityMessages([])
-    setSectionScores({})
     setCurrentPhase('research')
     setIsComplete(false)
 
@@ -390,14 +369,6 @@ export default function ProcessingPage() {
           setCurrentPhase('strategic')
           setExpandedPhases((prev) => new Set([...prev, 'strategic']))
         }
-        return
-      }
-
-      if (event.type === 'sectionScore') {
-        setSectionScores((current) => ({
-          ...current,
-          [event.section]: event.score
-        }))
         return
       }
 
@@ -528,7 +499,6 @@ export default function ProcessingPage() {
                 currentPhase={currentPhase}
                 expanded={expandedPhases.has(phase.id)}
                 onToggle={() => togglePhase(phase.id)}
-                sectionScores={sectionScores}
               />
             ))}
           </div>

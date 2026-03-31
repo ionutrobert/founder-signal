@@ -334,36 +334,44 @@ export async function executePhaseRequestStreaming(
       throw new Error('Response body is not readable')
     }
 
-    const decoder = new TextDecoder()
-    let buffer = ''
-    let fullContent = ''
-    const completedSections = new Map<string, { data: unknown; index: number }>()
-    let sectionIndex = 0
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let fullContent = ''
+  const completedSections = new Map<string, { data: unknown; index: number }>()
+  let sectionIndex = 0
+  let lastTokenTime = Date.now()
 
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
 
-      const chunk = decoder.decode(value, { stream: true })
-      buffer += chunk
+    // Check for token timeout (10 seconds)
+    const now = Date.now()
+    if (now - lastTokenTime > 10000) {
+      throw new Error(`Token timeout: No tokens received for 10 seconds`)
+    }
 
-      // Parse SSE data
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
+    const chunk = decoder.decode(value, { stream: true })
+    buffer += chunk
 
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6)
-          if (data === '[DONE]') continue
+    // Parse SSE data
+    const lines = buffer.split('\n')
+    buffer = lines.pop() || ''
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const data = line.slice(6)
+        if (data === '[DONE]') continue
 
         try {
           const parsed = JSON.parse(data)
           const token = parsed.choices?.[0]?.delta?.content
           if (token) {
+            lastTokenTime = Date.now()
             fullContent += token
             await callbacks.onToken?.(token)
 
-            // Check for completed sections
+            // Check for completed sections (only emit if key is in sectionKeys)
             for (const key of sectionKeys) {
               if (completedSections.has(key)) continue
 
@@ -379,9 +387,9 @@ export async function executePhaseRequestStreaming(
         } catch {
           // Incomplete JSON, continue
         }
-        }
       }
     }
+  }
 
     const latency = Date.now() - startTime
     updateModelHealth(model.id, latency, true)

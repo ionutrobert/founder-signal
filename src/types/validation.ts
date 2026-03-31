@@ -1,3 +1,9 @@
+export interface ExecutiveSummary {
+  plainEnglish: string
+  keyTakeaways: string[]
+  actionItems: string[]
+}
+
 export interface IdeaSummary {
   title: string
   oneLiner: string
@@ -125,6 +131,7 @@ export type Score = number
 export type Verdict = 'pass' | 'fail' | 'needs-work'
 
 export interface ValidationReport {
+  executiveSummary: ExecutiveSummary
   ideaSummary: IdeaSummary
   whyNow: WhyNow
   problemClarity: ProblemClarity
@@ -140,6 +147,7 @@ export interface ValidationReport {
 }
 
 export const validationSectionOrder = [
+  'executiveSummary',
   'ideaSummary',
   'whyNow',
   'problemClarity',
