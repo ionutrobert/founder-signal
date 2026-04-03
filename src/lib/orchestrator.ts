@@ -15,17 +15,6 @@ const SECTION_WEIGHTS: Record<string, number> = {
   risks: 0.07,
 }
 
-function calculateScoreFromVerdict(verdict: 'pass' | 'fail' | 'needs-work'): number {
-  switch (verdict) {
-    case 'pass':
-      return 85
-    case 'needs-work':
-      return 70
-    case 'fail':
-      return 40
-  }
-}
-
 function extractSectionScoresFromData(
   data: Record<string, unknown>,
   weights: Record<string, number>
@@ -55,6 +44,8 @@ import {
   generateResearchPrompt,
   generateStructuralPrompt,
   generateStrategicPrompt,
+  generateStructuralPromptStandalone,
+  generateStrategicPromptStandalone,
 } from './prompts';
 import { executePhaseRequest, executePhaseRequestStreaming, StreamingCallbacks } from './nim-client-v2';
 import { getRankedModels, refreshHealthTest } from './model-health-service';
@@ -748,8 +739,9 @@ function mergePhaseResults(
     overallScore = Math.round(weightedSum / totalWeight)
     verdict = determineVerdict(overallScore)
   } else {
-    overallScore = strategic.data.score ?? calculateScoreFromVerdict(strategic.data.verdict)
-    verdict = strategic.data.verdict
+    console.error('[orchestrator] No section scores found - AI must provide scores per section')
+    overallScore = strategic.data.score ?? 50
+    verdict = strategic.data.verdict ?? determineVerdict(overallScore)
   }
 
   const whyNowData = {
@@ -792,10 +784,10 @@ function mergePhaseResults(
 }
 
 /**
- * Orchestrate 3-Phase Validation
+ * Orchestrate 3-Phase Validation (PARALLEL EXECUTION)
  *
  * Main entry point for the 3-phase validation system.
- * Executes Research → Structural → Strategic phases with progressive callbacks.
+ * Executes ALL THREE phases concurrently using Promise.all() for ~10-15s total time.
  *
  * @param idea - Startup idea to validate
  * @param onProgress - Optional progress callback for phase events
@@ -816,22 +808,16 @@ export async function orchestrate3PhaseValidation(
     partialFailures: [],
   };
 
-  // Pass signal to allow cancellation
-  const researchResult = await executeResearchPhase(context, onProgress, signal);
+  console.log('[orchestrator] Starting PARALLEL 3-phase validation');
 
-  const structuralResult = await executeStructuralPhase(
-    context,
-    researchResult,
-    onProgress,
-    signal
-  );
+  // Execute all 3 phases concurrently
+  const [researchResult, structuralResult, strategicResult] = await Promise.all([
+    executeResearchPhaseConcurrent(context, idea, onProgress, signal),
+    executeStructuralPhaseConcurrent(context, idea, onProgress, signal),
+    executeStrategicPhaseConcurrent(context, idea, onProgress, signal),
+  ]);
 
-  const strategicResult = await executeStrategicPhase(
-    context,
-    structuralResult,
-    onProgress,
-    signal
-  );
+  console.log('[orchestrator] All phases completed, merging results');
 
   const finalResult = mergePhaseResults(
     researchResult,
@@ -844,6 +830,322 @@ export async function orchestrate3PhaseValidation(
   }
 
   return finalResult;
+}
+
+/**
+ * Execute Research Phase (Concurrent - no dependencies)
+ * 
+ * Analyzes market trends, competitors, timing, and industry dynamics
+ */
+async function executeResearchPhaseConcurrent(
+  context: PhaseExecutionContext,
+  idea: string,
+  onProgress?: ProgressCallback,
+  signal?: AbortSignal
+): Promise<PhaseResult & { data: ResearchResult }> {
+  const phase = ValidationPhase.RESEARCH;
+  const startTime = Date.now();
+
+  await onProgress?.({
+    phase,
+    status: 'starting',
+    message: 'Starting market research analysis...',
+  });
+
+  await onProgress?.({
+    phase: ValidationPhase.RESEARCH,
+    status: 'streaming',
+    message: 'phase:starting',
+  } as PhaseProgressEvent);
+
+  const prompt = generateResearchPrompt(idea);
+
+  await onProgress?.({
+    phase,
+    status: 'streaming',
+    message: 'Analyzing market trends and competition...',
+  } as PhaseProgressEvent);
+
+  const response = await executePhaseWithRetry(phase, async (model) => {
+    const result = await executePhaseRequest(prompt, { temperature: 0.7, maxTokens: 3000, model });
+    const parsed = parseJsonResponse<ResearchResult>(result.content, phase);
+    if (!parsed) {
+      throw new Error(`Failed to parse JSON response from ${model.id}`);
+    }
+    (result as any).parsedData = parsed;
+    return result;
+  }, signal);
+
+  const parsed = (response as any).parsedData as ResearchResult;
+
+  if (!parsed) {
+    throw new Error('Failed to parse research phase response after all retries');
+  }
+
+  const duration = Date.now() - startTime;
+
+  const result: PhaseResult & { data: ResearchResult } = {
+    phase,
+    completed: true,
+    duration,
+    modelUsed: response.model,
+    sectionScores: [],
+    failures: [],
+    data: parsed,
+  };
+
+  context.phases.push(result);
+
+  await onProgress?.({
+    phase,
+    status: 'complete',
+    message: 'Research phase completed',
+    data: parsed,
+  });
+
+  return result;
+}
+
+/**
+ * Execute Structural Phase (Concurrent - uses standalone prompt)
+ * 
+ * Evaluates problem clarity, target audience, market size, business model, and risks
+ */
+async function executeStructuralPhaseConcurrent(
+  context: PhaseExecutionContext,
+  idea: string,
+  onProgress?: ProgressCallback,
+  signal?: AbortSignal
+): Promise<PhaseResult & { data: StructuralResult }> {
+  const phase = ValidationPhase.STRUCTURAL;
+  const startTime = Date.now();
+
+  await onProgress?.({
+    phase,
+    status: 'starting',
+    message: 'Starting structural validation...',
+  });
+
+  await onProgress?.({
+    phase: ValidationPhase.STRUCTURAL,
+    status: 'streaming',
+    message: 'phase:starting',
+  } as PhaseProgressEvent);
+
+  // Generate standalone prompt without research context
+  const prompt = generateStructuralPromptStandalone(idea);
+
+  await onProgress?.({
+    phase,
+    status: 'streaming',
+    message: 'Analyzing problem clarity, target audience, and market...',
+  } as PhaseProgressEvent);
+
+  const structuralSectionKeys = ['problemClarity', 'targetAudience', 'marketInsight', 'monetization', 'risks'];
+
+  const formatSectionName = (key: string): string => {
+    const names: Record<string, string> = {
+      problemClarity: 'Problem clarity',
+      targetAudience: 'Target audience',
+      marketInsight: 'Market insight',
+      monetization: 'Monetization',
+      risks: 'Risks',
+      ideaSummary: 'Idea summary',
+      competition: 'Competition',
+      positioning: 'Positioning',
+      mvpScope: 'MVP scope',
+    }
+    return names[key] || key
+  }
+
+  const streamingCallbacks: StreamingCallbacks = {
+    onSection: async (key: string, data: unknown, index: number) => {
+      console.log(`[orchestrator] STRUCTURAL: Section ${key} completed (index ${index})`);
+
+      await onProgress?.({
+        phase,
+        status: 'streaming',
+        message: `Analyzed ${formatSectionName(key)}`,
+        sections: {
+          [key]: data,
+        },
+      });
+    },
+  };
+
+  const response = await executePhaseWithRetry(phase, (model) =>
+    executePhaseRequestStreaming(prompt, structuralSectionKeys, streamingCallbacks, {
+      temperature: 0.7,
+      maxTokens: 4000,
+      model,
+    }),
+    signal
+  );
+
+  console.log('[orchestrator] STRUCTURAL: API response received, content length:', response.content.length);
+
+  const parsed = parseJsonResponse<StructuralResult>(response.content, phase);
+
+  if (!parsed) {
+    throw new Error('Failed to parse structural phase response after all retries');
+  }
+
+  console.log('[orchestrator] STRUCTURAL: Parsed successfully');
+
+  const duration = Date.now() - startTime;
+
+  const structuralSectionScores = extractSectionScoresFromData(
+    parsed as unknown as Record<string, unknown>,
+    SECTION_WEIGHTS
+  )
+
+  if (structuralSectionScores.length === 0) {
+    console.warn('[orchestrator] STRUCTURAL: No AI scores found, using fallback')
+  }
+
+  const result: PhaseResult & { data: StructuralResult } = {
+    phase,
+    completed: true,
+    duration,
+    modelUsed: response.model,
+    sectionScores: structuralSectionScores,
+    failures: [],
+    data: parsed,
+  }
+
+  context.phases.push(result);
+
+  await onProgress?.({
+    phase,
+    status: 'complete',
+    message: 'Structural phase completed',
+    data: parsed,
+    sectionScores: structuralSectionScores,
+  });
+
+  return result;
+}
+
+/**
+ * Execute Strategic Phase (Concurrent - uses standalone prompt)
+ * 
+ * Evaluates competitive advantage, positioning, MVP scope, and final verdict
+ */
+async function executeStrategicPhaseConcurrent(
+  context: PhaseExecutionContext,
+  idea: string,
+  onProgress?: ProgressCallback,
+  signal?: AbortSignal
+): Promise<PhaseResult & { data: StrategicResult }> {
+  const phase = ValidationPhase.STRATEGIC;
+  const startTime = Date.now();
+
+  await onProgress?.({
+    phase,
+    status: 'starting',
+    message: 'Starting strategic evaluation...',
+  });
+
+  await onProgress?.({
+    phase: ValidationPhase.STRATEGIC,
+    status: 'streaming',
+    message: 'phase:starting',
+  } as PhaseProgressEvent);
+
+  // Generate standalone prompt without structural context
+  const prompt = generateStrategicPromptStandalone(idea);
+
+  await onProgress?.({
+    phase,
+    status: 'streaming',
+    message: 'Analyzing idea summary, competition, and positioning...',
+  } as PhaseProgressEvent);
+
+  const strategicSectionKeys = ['ideaSummary', 'competition', 'positioning', 'mvpScope'];
+
+  const formatSectionName = (key: string): string => {
+    const names: Record<string, string> = {
+      problemClarity: 'Problem clarity',
+      targetAudience: 'Target audience',
+      marketInsight: 'Market insight',
+      monetization: 'Monetization',
+      risks: 'Risks',
+      ideaSummary: 'Idea summary',
+      competition: 'Competition',
+      positioning: 'Positioning',
+      mvpScope: 'MVP scope',
+    }
+    return names[key] || key
+  }
+
+  const streamingCallbacks: StreamingCallbacks = {
+    onSection: async (key: string, data: unknown, index: number) => {
+      console.log(`[orchestrator] STRATEGIC: Section ${key} completed (index ${index})`);
+
+      await onProgress?.({
+        phase,
+        status: 'streaming',
+        message: `Analyzed ${formatSectionName(key)}`,
+        sections: {
+          [key]: data,
+        },
+      });
+    },
+  };
+
+  const response = await executePhaseWithRetry(phase, (model) =>
+    executePhaseRequestStreaming(prompt, strategicSectionKeys, streamingCallbacks, {
+      temperature: 0.7,
+      maxTokens: 4000,
+      model,
+    }),
+    signal
+  );
+
+  console.log('[orchestrator] STRATEGIC: API response received, content length:', response.content.length);
+
+  const parsed = parseJsonResponse<StrategicResult>(response.content, phase);
+
+  if (!parsed) {
+    throw new Error('Failed to parse strategic phase response after all retries');
+  }
+
+  console.log('[orchestrator] STRATEGIC: Parsed successfully');
+
+  const duration = Date.now() - startTime;
+
+  const strategicSectionScores = extractSectionScoresFromData(
+    parsed as unknown as Record<string, unknown>,
+    SECTION_WEIGHTS
+  )
+
+  if (strategicSectionScores.length === 0) {
+    console.warn('[orchestrator] STRATEGIC: No AI scores found, using fallback')
+  }
+
+  const result: PhaseResult & { data: StrategicResult } = {
+    phase,
+    completed: true,
+    duration,
+    modelUsed: response.model,
+    sectionScores: strategicSectionScores,
+    failures: [],
+    data: parsed,
+  }
+
+  context.phases.push(result);
+
+  await onProgress?.({
+    phase,
+    status: 'complete',
+    message: 'Strategic phase completed',
+    data: parsed,
+    sectionScores: strategicSectionScores,
+    finalScore: parsed.score,
+    finalVerdict: parsed.verdict,
+  });
+
+  return result;
 }
 
 /**

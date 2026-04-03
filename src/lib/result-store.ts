@@ -7,6 +7,7 @@ interface StoredResult {
   data: ValidationReport
   createdAt: number
   ownerId?: string
+  isPublic?: boolean
   partialFailures?: ValidationResult['partialFailures']
   phaseErrors?: ValidationResult['phases']
 }
@@ -36,6 +37,7 @@ export function generateResultId(): string {
 
 export async function storeResult(data: ValidationReport, extra?: {
   ownerId?: string
+  isPublic?: boolean
   partialFailures?: ValidationResult['partialFailures']
   phases?: ValidationResult['phases']
 }): Promise<string> {
@@ -49,6 +51,7 @@ export async function storeResult(data: ValidationReport, extra?: {
     data,
     createdAt: Date.now(),
     ...(extra?.ownerId && { ownerId: extra.ownerId }),
+    ...(extra?.isPublic !== undefined && { isPublic: extra.isPublic }),
     ...(extra?.partialFailures && { partialFailures: extra.partialFailures }),
     ...(extra?.phases && { phaseErrors: extra.phases }),
   }

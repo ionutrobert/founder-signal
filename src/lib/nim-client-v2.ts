@@ -14,6 +14,7 @@
 import { ModelConfig } from '../types/model-config';
 import { selectBestModel, updateModelHealth } from './model-rotation';
 import { getValidationPrompt, getStreamingValidationPrompt } from './prompts';
+import { getModelCircuitBreaker, CircuitOpenError } from './circuit-breaker';
 
 /**
  * Request options for NIM API calls
@@ -209,6 +210,14 @@ export async function analyzeWithModel(
   const timeout = options.timeout || model.tier.timeout;
   const prompt = getValidationPrompt(idea);
 
+  const circuitBreaker = getModelCircuitBreaker(model.id);
+
+  if (!circuitBreaker.canExecute()) {
+    const state = circuitBreaker.getState();
+    console.error(`[analyzeWithModel] Circuit breaker is ${state} for model ${model.id}`);
+    throw new CircuitOpenError(model.id, state);
+  }
+
   try {
     const response = await fetch(model.endpoint, {
       method: 'POST',
@@ -231,6 +240,7 @@ export async function analyzeWithModel(
 
     if (!response.ok) {
       const errorText = await response.text();
+      circuitBreaker.recordFailure();
       throw new Error(`NIM API error: ${response.status} ${errorText}`);
     }
 
@@ -240,6 +250,7 @@ export async function analyzeWithModel(
     const latency = Date.now() - startTime;
 
     updateModelHealth(model.id, latency, true);
+    circuitBreaker.recordSuccess();
 
     return {
       content,
@@ -249,6 +260,11 @@ export async function analyzeWithModel(
   } catch (error) {
     const latency = Date.now() - startTime;
 
+    if (error instanceof CircuitOpenError) {
+      throw error;
+    }
+
+    circuitBreaker.recordFailure();
     updateModelHealth(model.id, latency, false);
 
     if (error instanceof Error) {
@@ -292,6 +308,14 @@ export async function streamWithModel(
   const timeout = options.timeout || model.tier.timeout;
   const prompt = getStreamingValidationPrompt(idea);
 
+  const circuitBreaker = getModelCircuitBreaker(model.id);
+
+  if (!circuitBreaker.canExecute()) {
+    const state = circuitBreaker.getState();
+    console.error(`[streamWithModel] Circuit breaker is ${state} for model ${model.id}`);
+    throw new CircuitOpenError(model.id, state);
+  }
+
   try {
     const response = await fetch(model.endpoint, {
       method: 'POST',
@@ -314,6 +338,7 @@ export async function streamWithModel(
 
     if (!response.ok) {
       const errorText = await response.text();
+      circuitBreaker.recordFailure();
       throw new Error(`NIM API error: ${response.status} ${errorText}`);
     }
 
@@ -353,6 +378,7 @@ export async function streamWithModel(
     const latency = Date.now() - startTime;
 
     updateModelHealth(model.id, latency, true);
+    circuitBreaker.recordSuccess();
 
     return {
       model: model.id,
@@ -361,6 +387,11 @@ export async function streamWithModel(
   } catch (error) {
     const latency = Date.now() - startTime;
 
+    if (error instanceof CircuitOpenError) {
+      throw error;
+    }
+
+    circuitBreaker.recordFailure();
     updateModelHealth(model.id, latency, false);
 
     if (error instanceof Error) {
@@ -416,6 +447,14 @@ export async function executePhaseRequestStreaming(
   console.log('[executePhaseRequestStreaming] Model:', model.id)
   console.log('[executePhaseRequestStreaming] Section keys:', sectionKeys)
 
+  const circuitBreaker = getModelCircuitBreaker(model.id);
+
+  if (!circuitBreaker.canExecute()) {
+    const state = circuitBreaker.getState();
+    console.error(`[executePhaseRequestStreaming] Circuit breaker is ${state} for model ${model.id}`);
+    throw new CircuitOpenError(model.id, state);
+  }
+
   try {
     const response = await fetch(model.endpoint, {
       method: 'POST',
@@ -436,90 +475,89 @@ export async function executePhaseRequestStreaming(
       signal: createTimeoutSignal(timeout),
     })
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    
-    // Classify HTTP errors
-    if (response.status === 429) {
-      throw new ModelRateLimitError(model.id)
-    } else if (response.status >= 500) {
-      throw new ModelServerError(model.id, response.status)
+    if (!response.ok) {
+      const errorText = await response.text()
+
+      circuitBreaker.recordFailure();
+
+      if (response.status === 429) {
+        throw new ModelRateLimitError(model.id)
+      } else if (response.status >= 500) {
+        throw new ModelServerError(model.id, response.status)
+      }
+
+      throw new Error(`NIM API error: ${response.status} ${errorText}`)
     }
-    
-    throw new Error(`NIM API error: ${response.status} ${errorText}`)
-  }
 
     const reader = response.body?.getReader()
     if (!reader) {
       throw new Error('Response body is not readable')
     }
 
-  const decoder = new TextDecoder()
-  let buffer = ''
-  let fullContent = ''
-  const completedSections = new Map<string, { data: unknown; index: number }>()
-  let sectionIndex = 0
-  let lastTokenTime = Date.now()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    let fullContent = ''
+    const completedSections = new Map<string, { data: unknown; index: number }>()
+    let sectionIndex = 0
+    let lastTokenTime = Date.now()
 
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
 
-    // Check for token timeout (10 seconds)
-    const now = Date.now()
-    if (now - lastTokenTime > 10000) {
-      throw new Error(`Token timeout: No tokens received for 10 seconds`)
-    }
+      const now = Date.now()
+      if (now - lastTokenTime > 10000) {
+        circuitBreaker.recordFailure();
+        throw new Error(`Token timeout: No tokens received for 10 seconds`)
+      }
 
-    const chunk = decoder.decode(value, { stream: true })
-    buffer += chunk
+      const chunk = decoder.decode(value, { stream: true })
+      buffer += chunk
 
-    // Parse SSE data
-    const lines = buffer.split('\n')
-    buffer = lines.pop() || ''
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
 
-    for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        const data = line.slice(6)
-        if (data === '[DONE]') continue
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6)
+          if (data === '[DONE]') continue
 
-        try {
-          const parsed = JSON.parse(data)
-          const token = parsed.choices?.[0]?.delta?.content
-          if (token) {
-            lastTokenTime = Date.now()
-            fullContent += token
-            await callbacks.onToken?.(token)
+          try {
+            const parsed = JSON.parse(data)
+            const token = parsed.choices?.[0]?.delta?.content
+            if (token) {
+              lastTokenTime = Date.now()
+              fullContent += token
+              await callbacks.onToken?.(token)
 
-            // Check for completed sections (only emit if key is in sectionKeys)
-            for (const key of sectionKeys) {
-              if (completedSections.has(key)) continue
+              for (const key of sectionKeys) {
+                if (completedSections.has(key)) continue
 
-              const checkpoint = tryExtractSection(fullContent, key)
-              if (checkpoint) {
-                completedSections.set(key, { data: checkpoint.data, index: sectionIndex })
-                console.log(`[executePhaseRequestStreaming] Section ${key} detected, calling onSection`)
-                await callbacks.onSection?.(key, checkpoint.data, sectionIndex)
-                sectionIndex++
+                const checkpoint = tryExtractSection(fullContent, key)
+                if (checkpoint) {
+                  completedSections.set(key, { data: checkpoint.data, index: sectionIndex })
+                  console.log(`[executePhaseRequestStreaming] Section ${key} detected, calling onSection`)
+                  await callbacks.onSection?.(key, checkpoint.data, sectionIndex)
+                  sectionIndex++
+                }
               }
             }
+          } catch {
           }
-        } catch {
-          // Incomplete JSON, continue
         }
       }
     }
-  }
 
     const latency = Date.now() - startTime
     updateModelHealth(model.id, latency, true)
+    circuitBreaker.recordSuccess();
 
     console.log('[executePhaseRequestStreaming] Completed')
     console.log('[executePhaseRequestStreaming] Content length:', fullContent.length)
     console.log('[executePhaseRequestStreaming] Sections completed:', Array.from(completedSections.keys()))
 
-    // Check for empty content
     if (!fullContent || fullContent.trim().length === 0) {
+      circuitBreaker.recordFailure();
       throw new ModelEmptyResponseError(model.id)
     }
 
@@ -532,12 +570,18 @@ export async function executePhaseRequestStreaming(
     const latency = Date.now() - startTime
     updateModelHealth(model.id, latency, false)
 
-    // Re-throw custom errors directly
-    if (error instanceof ModelRateLimitError || 
-        error instanceof ModelServerError || 
+    if (error instanceof CircuitOpenError) {
+      throw error;
+    }
+
+    if (error instanceof ModelRateLimitError ||
+        error instanceof ModelServerError ||
         error instanceof ModelEmptyResponseError) {
+      circuitBreaker.recordFailure();
       throw error
     }
+
+    circuitBreaker.recordFailure();
 
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
@@ -613,6 +657,14 @@ export async function executePhaseRequest(
   console.log('[executePhaseRequest] System prompt length:', prompt.system.length);
   console.log('[executePhaseRequest] User prompt length:', prompt.user.length);
 
+  const circuitBreaker = getModelCircuitBreaker(model.id);
+
+  if (!circuitBreaker.canExecute()) {
+    const state = circuitBreaker.getState();
+    console.error(`[executePhaseRequest] Circuit breaker is ${state} for model ${model.id}`);
+    throw new CircuitOpenError(model.id, state);
+  }
+
   try {
     const response = await fetch(model.endpoint, {
       method: 'POST',
@@ -639,20 +691,22 @@ export async function executePhaseRequest(
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[executePhaseRequest] Error response:', errorText);
-      
-      // Classify HTTP errors
+
+      circuitBreaker.recordFailure();
+
       if (response.status === 429) {
         throw new ModelRateLimitError(model.id);
       } else if (response.status >= 500) {
         throw new ModelServerError(model.id, response.status);
       }
-      
+
       throw new Error(`NIM API error: ${response.status} ${errorText}`);
     }
 
     if (options.stream) {
       const latency = Date.now() - startTime;
       updateModelHealth(model.id, latency, true);
+      circuitBreaker.recordSuccess();
 
       return {
         content: '',
@@ -665,12 +719,12 @@ export async function executePhaseRequest(
     console.log('[executePhaseRequest] Response data keys:', Object.keys(data));
     console.log('[executePhaseRequest] Choices:', data.choices);
     const content = data.choices?.[0]?.message?.content || '';
-    
-    // Check for empty content
+
     if (!content || content.trim().length === 0) {
+      circuitBreaker.recordFailure();
       throw new ModelEmptyResponseError(model.id);
     }
-    
+
     console.log('[executePhaseRequest] Content length:', content.length);
     console.log('[executePhaseRequest] Content preview:', content.substring(0, 200));
 
@@ -678,6 +732,7 @@ export async function executePhaseRequest(
     console.log('[executePhaseRequest] Latency:', latency);
 
     updateModelHealth(model.id, latency, true);
+    circuitBreaker.recordSuccess();
 
     return {
       content,
@@ -688,14 +743,19 @@ export async function executePhaseRequest(
     const latency = Date.now() - startTime;
     console.error('[executePhaseRequest] Error:', error);
 
-    updateModelHealth(model.id, latency, false);
-
-    // Re-throw custom errors directly
-    if (error instanceof ModelRateLimitError || 
-        error instanceof ModelServerError || 
-        error instanceof ModelEmptyResponseError) {
+    if (error instanceof CircuitOpenError) {
       throw error;
     }
+
+    if (error instanceof ModelRateLimitError ||
+        error instanceof ModelServerError ||
+        error instanceof ModelEmptyResponseError) {
+      circuitBreaker.recordFailure();
+      throw error;
+    }
+
+    circuitBreaker.recordFailure();
+    updateModelHealth(model.id, latency, false);
 
     if (error instanceof Error) {
       if (error.name === 'AbortError') {

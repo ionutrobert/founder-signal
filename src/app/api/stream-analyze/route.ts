@@ -3,12 +3,15 @@ import { NextResponse } from 'next/server'
 import { orchestrate3PhaseValidation } from '@/lib/orchestrator'
 import { createRequestContext, runWithContext } from '@/lib/request-context'
 import { storeResult } from '@/lib/result-store'
+import { checkDailyLimit, incrementDailyUsage, getFingerprint } from '@/lib/daily-rate-limit'
+import { checkForDuplicates } from '@/lib/duplicate-detection'
+import { createPublicIdea } from '@/lib/public-ideas'
 import type {
-  APIError,
-  StreamAnalyzeEvent,
-  ValidationReport,
-  ValidationSectionName,
-  ValidationResult
+APIError,
+StreamAnalyzeEvent,
+ValidationReport,
+ValidationSectionName,
+ValidationResult
 } from '@/types/validation'
 import type { PhaseProgressEvent } from '@/lib/orchestrator'
 
@@ -16,7 +19,8 @@ const MAX_IDEA_LENGTH = 10000
 const MIN_IDEA_LENGTH = 10
 
 interface AnalyzeRequest {
-  idea?: string
+	idea?: string
+	isPublic?: boolean
 }
 
 function createErrorResponse(code: string, message: string, status: number) {
@@ -52,7 +56,7 @@ export async function POST(request: Request) {
     return createErrorResponse('INVALID_BODY', 'Request body must be a JSON object', 400)
   }
 
-  const { idea } = body as AnalyzeRequest
+	const { idea, isPublic = true } = body as AnalyzeRequest
 
   if (typeof idea !== 'string') {
     return createErrorResponse('MISSING_IDEA', 'Field "idea" is required and must be a string', 400)
@@ -64,11 +68,32 @@ export async function POST(request: Request) {
     return createErrorResponse('IDEA_TOO_SHORT', `Idea must be at least ${MIN_IDEA_LENGTH} characters`, 400)
   }
 
-  if (trimmedIdea.length > MAX_IDEA_LENGTH) {
-    return createErrorResponse('IDEA_TOO_LONG', `Idea must not exceed ${MAX_IDEA_LENGTH} characters`, 400)
-  }
+if (trimmedIdea.length > MAX_IDEA_LENGTH) {
+return createErrorResponse('IDEA_TOO_LONG', `Idea must not exceed ${MAX_IDEA_LENGTH} characters`, 400)
+}
 
-  const stream = new TransformStream()
+const duplicateCheck = await checkForDuplicates(trimmedIdea)
+if (duplicateCheck.isDuplicate) {
+return createErrorResponse(
+'DUPLICATE_IDEA',
+`This idea appears very similar to one recently analyzed. Please provide a more unique idea.`,
+409
+)
+}
+
+const fingerprint = getFingerprint(request)
+const { allowed, resetAt } = checkDailyLimit(fingerprint)
+
+if (!allowed) {
+const hoursUntilReset = Math.ceil((resetAt - Date.now()) / (60 * 60 * 1000))
+return createErrorResponse(
+'RATE_LIMIT_EXCEEDED',
+`Daily limit reached. You've already analyzed an idea today. Please try again in ${hoursUntilReset} hours.`,
+429
+)
+}
+
+const stream = new TransformStream()
   const writer = stream.writable.getWriter()
   const abortController = new AbortController()
 
@@ -255,21 +280,36 @@ export async function POST(request: Request) {
             console.log('[stream-analyze] Phase failures:', validationResult.partialFailures)
           }
           
-          const resultId = await storeResult(result as ValidationReport, {
-            partialFailures: validationResult.partialFailures,
-            phases: validationResult.phases
-          })
+		const resultId = await storeResult(result as ValidationReport, {
+			partialFailures: validationResult.partialFailures,
+			phases: validationResult.phases,
+			isPublic
+		})
 
-await writeSseChunk(writer, {
-  type: 'complete',
-  data: {
-    ...result,
-    phases: validationResult.phases
-  } as ValidationReport,
-  resultId
+		// Save to Supabase public_ideas only if public
+		if (isPublic && result.ideaSummary) {
+			await createPublicIdea({
+				id: resultId,
+				title: result.ideaSummary.title || 'Untitled Idea',
+				one_liner: result.ideaSummary.oneLiner || '',
+				category: result.ideaSummary.category || 'General',
+				score: result.score,
+				verdict: result.verdict
+			})
+		}
+
+incrementDailyUsage(fingerprint)
+
+        await writeSseChunk(writer, {
+type: 'complete',
+data: {
+...result,
+phases: validationResult.phases
+} as ValidationReport,
+resultId
 })
-          await writeSseFlush(writer)
-        }
+await writeSseFlush(writer)
+}
   } catch (error) {
     hasError = true
     const message = error instanceof Error ? error.message : 'An unexpected streaming error occurred.'

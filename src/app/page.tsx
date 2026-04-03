@@ -7,19 +7,23 @@ import { motion } from 'framer-motion'
 import { ArrowUpRight, Target, Users, TrendingUp, Clock, Signal } from 'lucide-react'
 
 import { RecentAnalyses } from '@/components/recent-analyses'
+import { FeaturedIdeas } from '@/components/featured-ideas'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import { LogoCarousel } from '@/components/logo-carousel'
 import { ScoreGauge } from '@/components/score-gauge'
+import { Lock, Globe } from 'lucide-react'
 
 const PENDING_IDEA_STORAGE_KEY = 'founder-signal:pending-idea'
 
 export default function HomePage() {
-  const router = useRouter()
-  const [idea, setIdea] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+	const router = useRouter()
+	const [idea, setIdea] = useState('')
+	const [isSubmitting, setIsSubmitting] = useState(false)
+	const [error, setError] = useState<string | null>(null)
+	const [isPublic, setIsPublic] = useState(true)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -32,15 +36,16 @@ export default function HomePage() {
     setIsSubmitting(true)
     setError(null)
 
-    try {
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.setItem(PENDING_IDEA_STORAGE_KEY, idea.trim())
-      }
-      router.push('/processing')
-    } catch {
-      setError('Unable to start the live analysis. Please try again.')
-      setIsSubmitting(false)
-    }
+	try {
+		if (typeof window !== 'undefined') {
+			window.sessionStorage.setItem(PENDING_IDEA_STORAGE_KEY, idea.trim())
+			window.sessionStorage.setItem('founder-signal:is-public', isPublic.toString())
+		}
+		router.push('/processing')
+	} catch {
+		setError('Unable to start the live analysis. Please try again.')
+		setIsSubmitting(false)
+	}
   }
 
   return (
@@ -313,15 +318,40 @@ export default function HomePage() {
                   <label htmlFor="idea" className="block text-sm font-medium text-slate-700 mb-2">
                     Describe your startup idea
                   </label>
-                  <Textarea
-                    id="idea"
-                    value={idea}
-                    onChange={(e) => setIdea(e.target.value)}
-                    placeholder="A platform that helps freelancers find equity-based startup opportunities..."
-                    className="min-h-[120px] border-slate-200 focus:border-slate-400 focus:ring-slate-400"
-                    disabled={isSubmitting}
-                  />
-                </div>
+				<Textarea
+					id="idea"
+					value={idea}
+					onChange={(e) => setIdea(e.target.value)}
+					placeholder="A platform that helps freelancers find equity-based startup opportunities..."
+					className="min-h-[120px] border-slate-200 focus:border-slate-400 focus:ring-slate-400"
+					disabled={isSubmitting}
+				/>
+				</div>
+
+				<div className="flex items-center space-x-2">
+					<Checkbox
+						id="public"
+						checked={isPublic}
+						onCheckedChange={(checked) => setIsPublic(checked as boolean)}
+						disabled={isSubmitting}
+					/>
+					<label
+						htmlFor="public"
+						className="text-sm text-slate-600 flex items-center gap-2 cursor-pointer"
+					>
+						{isPublic ? (
+							<>
+								<Globe className="w-4 h-4 text-emerald-600" />
+								<span>Share publicly in idea gallery</span>
+							</>
+						) : (
+							<>
+								<Lock className="w-4 h-4 text-slate-400" />
+								<span>Keep private</span>
+							</>
+						)}
+					</label>
+				</div>
 
                 {error && (
                   <p className="text-sm text-red-600 bg-red-50 px-4 py-2 rounded-lg">
@@ -343,12 +373,27 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Recent Analyses */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <RecentAnalyses />
-        </div>
-      </section>
-    </main>
+			{/* Recent Analyses */}
+			<section className="py-16 bg-white">
+				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+					<RecentAnalyses />
+				</div>
+			</section>
+
+			{/* Featured Ideas */}
+			<section className="py-16 bg-slate-50">
+				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+					<div className="text-center mb-8">
+						<h2 className="text-2xl font-semibold text-slate-900">
+							Featured Validated Ideas
+						</h2>
+						<p className="mt-2 text-slate-600">
+							Explore top startup ideas from our community
+						</p>
+					</div>
+					<FeaturedIdeas />
+				</div>
+			</section>
+			</main>
   )
 }

@@ -78,23 +78,24 @@ function FloatingInput({
   )
 }
 
-export default function AuthDrawer({ isOpen, onClose }: AuthDrawerProps) {
-  const [email, setEmail] = React.useState('')
-  const [password, setPassword] = React.useState('')
-  const [rememberMe, setRememberMe] = React.useState(false)
+export default function AuthDrawer({ isOpen, onClose, defaultTab = 'login' }: AuthDrawerProps) {
+const [email, setEmail] = React.useState('')
+const [password, setPassword] = React.useState('')
+const [rememberMe, setRememberMe] = React.useState(false)
+const [tab, setTab] = React.useState<'login' | 'signup'>(defaultTab)
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) onClose()
-  }
+const handleBackdropClick = (e: React.MouseEvent) => {
+if (e.target === e.currentTarget) onClose()
+}
 
-  const handleSocialLogin = (provider: 'google' | 'github') => {
-    console.log(`Login with ${provider}`)
-  }
+const handleSocialLogin = (provider: 'google' | 'github') => {
+console.log(`Login with ${provider}`)
+}
 
-  const handleEmailLogin = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log('Email login:', { email, password, rememberMe })
-  }
+const handleEmailLogin = (e: React.FormEvent) => {
+e.preventDefault()
+console.log('Email login:', { email, password, rememberMe })
+}
 
   const containerVariants = {
     hidden: { x: '100%' },
@@ -167,16 +168,16 @@ export default function AuthDrawer({ isOpen, onClose }: AuthDrawerProps) {
                   animate="visible"
                   className="w-full max-w-sm mx-auto"
                 >
-                  <motion.div variants={itemVariants} className="mb-8 text-center">
-                    <h2 className="text-2xl font-semibold text-slate-900">
-                      Welcome back
-                    </h2>
-                    <p className="mt-2 text-sm text-slate-500">
-                      Sign in to validate your startup ideas
-                    </p>
-                  </motion.div>
+<motion.div variants={itemVariants} className="mb-8 text-center">
+<h2 className="text-2xl font-semibold text-slate-900">
+{tab === 'login' ? 'Welcome back' : 'Create account'}
+</h2>
+<p className="mt-2 text-sm text-slate-500">
+{tab === 'login' ? 'Sign in to validate your startup ideas' : 'Start validating your ideas for free'}
+</p>
+</motion.div>
 
-                  <form onSubmit={handleEmailLogin} className="space-y-4">
+<form onSubmit={handleEmailLogin} className="space-y-4">
                     <motion.div variants={itemVariants}>
                       <FloatingInput
                         id="login-email"
@@ -215,15 +216,15 @@ export default function AuthDrawer({ isOpen, onClose }: AuthDrawerProps) {
                       </button>
                     </motion.div>
 
-                    <motion.div variants={itemVariants}>
-                      <Button
-                        type="submit"
-                        size="lg"
-                        className="w-full bg-[#E7EB5D] hover:bg-[#D4D854] text-slate-900 font-medium"
-                      >
-                        Sign In
-                      </Button>
-                    </motion.div>
+<motion.div variants={itemVariants}>
+<Button
+type="submit"
+size="lg"
+className="w-full bg-[#E7EB5D] hover:bg-[#D4D854] text-slate-900 font-medium"
+>
+{tab === 'login' ? 'Sign In' : 'Create Account'}
+</Button>
+</motion.div>
 
                     <motion.div variants={itemVariants} className="relative">
                       <div className="absolute inset-0 flex items-center">
@@ -264,14 +265,33 @@ export default function AuthDrawer({ isOpen, onClose }: AuthDrawerProps) {
                       </Button>
                     </motion.div>
 
-                    <motion.div variants={itemVariants} className="pt-4 text-center">
-                      <p className="text-sm text-slate-500">
-                        Don&apos;t have an account?{' '}
-                        <button type="button" className="font-medium text-slate-700 hover:text-slate-900">
-                          Sign up for free
-                        </button>
-                      </p>
-                    </motion.div>
+<motion.div variants={itemVariants} className="pt-4 text-center">
+<p className="text-sm text-slate-500">
+{tab === 'login' ? (
+<>
+Don&apos;t have an account?{' '}
+<button
+type="button"
+onClick={() => setTab('signup')}
+className="font-medium text-slate-700 hover:text-slate-900"
+>
+Sign up for free
+</button>
+</>
+) : (
+<>
+Already have an account?{' '}
+<button
+type="button"
+onClick={() => setTab('login')}
+className="font-medium text-slate-700 hover:text-slate-900"
+>
+Sign in
+</button>
+</>
+)}
+</p>
+</motion.div>
                   </form>
                 </motion.div>
               </div>

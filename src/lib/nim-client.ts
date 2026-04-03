@@ -4,11 +4,11 @@ const MODEL = "nvidia/llama-3.3-nemotron-super-49b-v1.5";
 const TIMEOUT_MS = 300000;
 
 export async function analyzeIdea(idea: string): Promise<string> {
-  const apiKey = process.env.NVIDIA_NIM_API_KEY;
+const apiKey = process.env.NVIDIA_API_KEY;
 
-  if (!apiKey) {
-    throw new Error("NVIDIA_NIM_API_KEY is not configured");
-  }
+if (!apiKey) {
+throw new Error("NVIDIA_API_KEY is not configured");
+}
 
   const { getValidationPrompt } = await import("./prompts");
   const { system, user } = getValidationPrompt(idea);
@@ -62,14 +62,14 @@ export async function analyzeIdea(idea: string): Promise<string> {
 }
 
 export async function streamIdeaAnalysis(
-  idea: string,
-  onToken: (token: string) => void | Promise<void>
+idea: string,
+onToken: (token: string) => void | Promise<void>
 ): Promise<void> {
-  const apiKey = process.env.NVIDIA_NIM_API_KEY;
+const apiKey = process.env.NVIDIA_API_KEY;
 
-  if (!apiKey) {
-    throw new Error("NVIDIA_NIM_API_KEY is not configured");
-  }
+if (!apiKey) {
+throw new Error("NVIDIA_API_KEY is not configured");
+}
 
   const { getStreamingValidationPrompt } = await import("./prompts");
   const { system, user } = getStreamingValidationPrompt(idea);

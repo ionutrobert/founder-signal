@@ -1,30 +1,38 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Signal, ArrowRight, Menu, FileText, History, Settings } from 'lucide-react'
+import { Signal, ArrowRight, Menu, FileText, History, Settings, Lightbulb } from 'lucide-react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
+Sheet,
+SheetContent,
+SheetHeader,
+SheetTitle,
+SheetTrigger,
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 
 const sheetLinks = [
-  { href: '/reports', label: 'Reports', icon: FileText },
-  { href: '/history', label: 'History', icon: History },
-  { href: '/settings', label: 'Settings', icon: Settings },
+{ href: '/explore', label: 'Browse Ideas', icon: Lightbulb, requiresAuth: false },
+]
+
+const authOnlyLinks = [
+{ href: '/reports', label: 'Reports', icon: FileText, requiresAuth: true },
+{ href: '/history', label: 'History', icon: History, requiresAuth: true },
+{ href: '/settings', label: 'Settings', icon: Settings, requiresAuth: true },
 ]
 
 export default function Navigation() {
-  const [isScrolled, setIsScrolled] = useState(false)
-  const [isSheetOpen, setIsSheetOpen] = useState(false)
-  const { openAuthDrawer } = useAuth()
+const [isScrolled, setIsScrolled] = useState(false)
+const [isSheetOpen, setIsSheetOpen] = useState(false)
+const { openAuthDrawer, user } = useAuth()
+
+const allLinks = user
+? [...sheetLinks, ...authOnlyLinks]
+: sheetLinks
 
   useEffect(() => {
     const handleScroll = () => {
@@ -113,25 +121,25 @@ export default function Navigation() {
                       <SheetTitle className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-4">
                         Menu
                       </SheetTitle>
-                      <div className="space-y-1">
-                        {sheetLinks.map((link, index) => (
-                          <motion.div
-                            key={link.href}
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.1, duration: 0.3 }}
-                          >
-                            <Link
-                              href={link.href}
-                              onClick={() => setIsSheetOpen(false)}
-                              className="flex items-center gap-3 px-4 py-3 text-base font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors"
-                            >
-                              <link.icon className="h-5 w-5 text-slate-400" />
-                              {link.label}
-                            </Link>
-                          </motion.div>
-                        ))}
-                      </div>
+<div className="space-y-1">
+{allLinks.map((link, index) => (
+<motion.div
+key={link.href}
+initial={{ opacity: 0, x: 20 }}
+animate={{ opacity: 1, x: 0 }}
+transition={{ delay: index * 0.1, duration: 0.3 }}
+>
+<Link
+href={link.href}
+onClick={() => setIsSheetOpen(false)}
+className="flex items-center gap-3 px-4 py-3 text-base font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors"
+>
+<link.icon className="h-5 w-5 text-slate-400" />
+{link.label}
+</Link>
+</motion.div>
+))}
+</div>
                     </nav>
 
                     {/* Bottom Get Started Button */}

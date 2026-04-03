@@ -1,9 +1,10 @@
 import type { APIResponse, StreamAnalyzeEvent } from '@/types/validation'
 
 interface StreamAnalyzeOptions {
-  idea: string
-  signal?: AbortSignal
-  onEvent: (event: StreamAnalyzeEvent) => void
+	idea: string
+	isPublic?: boolean
+	signal?: AbortSignal
+	onEvent: (event: StreamAnalyzeEvent) => void
 }
 
 function parseSseChunk(chunk: string): StreamAnalyzeEvent[] {
@@ -28,15 +29,15 @@ function parseSseChunk(chunk: string): StreamAnalyzeEvent[] {
     .filter((event): event is StreamAnalyzeEvent => event !== null)
 }
 
-export async function streamAnalyzeIdea({ idea, signal, onEvent }: StreamAnalyzeOptions) {
-  const response = await fetch('/api/stream-analyze', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ idea }),
-    signal
-  })
+export async function streamAnalyzeIdea({ idea, isPublic = true, signal, onEvent }: StreamAnalyzeOptions) {
+	const response = await fetch('/api/stream-analyze', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({ idea, isPublic }),
+		signal
+	})
 
   if (!response.ok) {
     let message = 'Unable to start live analysis.'

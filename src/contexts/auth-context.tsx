@@ -3,10 +3,11 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
 
 interface AuthContextType {
-  isAuthDrawerOpen: boolean
-  openAuthDrawer: (defaultTab?: 'login' | 'signup') => void
-  closeAuthDrawer: () => void
-  authDefaultTab: 'login' | 'signup'
+isAuthDrawerOpen: boolean
+openAuthDrawer: (defaultTab?: 'login' | 'signup') => void
+closeAuthDrawer: () => void
+authDefaultTab: 'login' | 'signup'
+user: null
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -24,18 +25,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAuthDrawerOpen(false)
   }, [])
 
-  return (
-    <AuthContext.Provider
-      value={{
-        isAuthDrawerOpen,
-        openAuthDrawer,
-        closeAuthDrawer,
-        authDefaultTab,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  )
+return (
+<AuthContext.Provider
+value={{
+isAuthDrawerOpen,
+openAuthDrawer,
+closeAuthDrawer,
+authDefaultTab,
+user: null,
+}}
+>
+{children}
+</AuthContext.Provider>
+)
 }
 
 export function useAuth() {

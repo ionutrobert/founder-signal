@@ -150,9 +150,35 @@ function AccordionSection({ title, score, children, defaultOpen = false }: Accor
   const [isOpen, setIsOpen] = useState(defaultOpen)
   const Icon = sectionIcons[title] || Target
 
+  const getStrengthFromScore = (s?: number): 'critical' | 'weak' | 'neutral' | 'good' | 'strong' => {
+    if (!s) return 'neutral'
+    if (s >= 80) return 'strong'
+    if (s >= 65) return 'good'
+    if (s >= 50) return 'neutral'
+    if (s >= 35) return 'weak'
+    return 'critical'
+  }
+
+  const strength = getStrengthFromScore(score)
+  const strengthBorders: Record<string, string> = {
+    critical: 'border-l-[3px] border-l-red-300 bg-red-50/30',
+    weak: 'border-l-2 border-l-amber-300 bg-amber-50/30',
+    neutral: 'border-l border-l-slate-300 bg-slate-50/30',
+    good: 'border-l-2 border-l-emerald-300 bg-emerald-50/30',
+    strong: 'border-l-[3px] border-l-emerald-400 bg-emerald-100/50',
+  }
+
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div className={cn(
+        'rounded-xl border border-slate-200 bg-white overflow-hidden',
+        'border-l-[3px]',
+        strength === 'critical' && 'border-l-red-300',
+        strength === 'weak' && 'border-l-amber-300',
+        strength === 'neutral' && 'border-l-slate-300',
+        strength === 'good' && 'border-l-emerald-300',
+        strength === 'strong' && 'border-l-emerald-400'
+      )}>
         <CollapsibleTrigger className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
@@ -171,7 +197,10 @@ function AccordionSection({ title, score, children, defaultOpen = false }: Accor
           </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="px-5 pb-5 pt-2 border-t border-slate-100">
+          <div className={cn(
+            'px-5 pb-5 pt-2 border-t border-slate-100',
+            strengthBorders[strength]
+          )}>
             {children}
           </div>
         </CollapsibleContent>

@@ -27,6 +27,7 @@ import { AnimatedScore } from '@/components/animated-score'
 
 const PENDING_IDEA_STORAGE_KEY = 'founder-signal:pending-idea'
 const ANALYSIS_RESULT_STORAGE_KEY = 'founder-signal:analysis-result'
+const IS_PUBLIC_STORAGE_KEY = 'founder-signal:is-public'
 const REDIRECT_DELAY_MS = 1500
 
 type Phase = 'research' | 'structural' | 'strategic' | 'complete'
@@ -231,16 +232,18 @@ function PhaseCard({
 }
 
 export default function ProcessingPage() {
-  const router = useRouter()
-  const redirectTimeoutRef = useRef<number | null>(null)
-  const [idea, setIdea] = useState<string | null>(null)
-  const [hasLoadedIdea, setHasLoadedIdea] = useState(false)
-  const [score, setScore] = useState(0)
+	const router = useRouter()
+	const redirectTimeoutRef = useRef<number | null>(null)
+	const [idea, setIdea] = useState<string | null>(null)
+	const [isPublic, setIsPublic] = useState(true)
+	const [hasLoadedIdea, setHasLoadedIdea] = useState(false)
+	const [score, setScore] = useState(0)
   const [currentPhase, setCurrentPhase] = useState<Phase>('research')
   const [activityMessages, setActivityMessages] = useState<{ id: string; message: string }[]>([])
 
-  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set(['research']))
-  const [isComplete, setIsComplete] = useState(false)
+const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set(['research']))
+const [isComplete, setIsComplete] = useState(false)
+const [error, setError] = useState<string | null>(null)
 
   const baseId = useId()
   const counterRef = useRef(0)
@@ -249,24 +252,27 @@ export default function ProcessingPage() {
     return `${baseId}-activity-${counterRef.current}`
   }, [baseId])
 
-  useEffect(() => {
-    const storedIdea = window.sessionStorage.getItem(PENDING_IDEA_STORAGE_KEY)
-    if (!storedIdea?.trim()) {
-      router.replace('/')
-      return
-    }
-    setIdea(storedIdea)
-    setHasLoadedIdea(true)
-  }, [router])
+	useEffect(() => {
+		const storedIdea = window.sessionStorage.getItem(PENDING_IDEA_STORAGE_KEY)
+		const storedIsPublic = window.sessionStorage.getItem(IS_PUBLIC_STORAGE_KEY)
+		if (!storedIdea?.trim()) {
+			router.replace('/')
+			return
+		}
+		setIdea(storedIdea)
+		setIsPublic(storedIsPublic !== 'false')
+		setHasLoadedIdea(true)
+	}, [router])
 
-  useEffect(() => {
-    if (!idea) return
+useEffect(() => {
+if (!idea) return
 
-    const controller = new AbortController()
-    setScore(0)
-    setActivityMessages([])
-    setCurrentPhase('research')
-    setIsComplete(false)
+const controller = new AbortController()
+setScore(0)
+setActivityMessages([])
+setCurrentPhase('research')
+setIsComplete(false)
+setError(null)
 
     const handleEvent = (event: StreamAnalyzeEvent) => {
       if (event.type === 'score') {
@@ -293,11 +299,12 @@ export default function ProcessingPage() {
         return
       }
 
-    if (event.type === 'complete') {
-      setScore(event.data.score)
-      setIsComplete(true)
-      setCurrentPhase('complete')
-        window.sessionStorage.removeItem(PENDING_IDEA_STORAGE_KEY)
+	if (event.type === 'complete') {
+		setScore(event.data.score)
+		setIsComplete(true)
+		setCurrentPhase('complete')
+		window.sessionStorage.removeItem(PENDING_IDEA_STORAGE_KEY)
+		window.sessionStorage.removeItem(IS_PUBLIC_STORAGE_KEY)
 
         try {
           window.sessionStorage.setItem(ANALYSIS_RESULT_STORAGE_KEY, JSON.stringify(event.data))
@@ -319,20 +326,23 @@ export default function ProcessingPage() {
       }
     }
 
-    void streamAnalyzeIdea({
-      idea,
-      signal: controller.signal,
-      onEvent: handleEvent
-    }).catch((streamError) => {
-      if (controller.signal.aborted) return
-      // Silently retry - don't show errors
-      console.error('Stream error, will retry:', streamError)
-    })
+	void streamAnalyzeIdea({
+		idea,
+		isPublic,
+		signal: controller.signal,
+		onEvent: handleEvent
+	}).catch((streamError) => {
+		if (controller.signal.aborted) return
+		const errorMessage = streamError instanceof Error ? streamError.message : 'Analysis failed'
+		console.error('Stream error:', streamError)
+		setError(errorMessage)
+		setActivityMessages([])
+	})
 
-    return () => {
-      controller.abort()
-    }
-  }, [idea, router, getActivityId])
+	return () => {
+		controller.abort()
+	}
+}, [idea, isPublic, router, getActivityId])
 
   useEffect(() => {
     return () => {
@@ -368,20 +378,47 @@ export default function ProcessingPage() {
     return 'text-red-600'
   }
 
-  if (!hasLoadedIdea) {
-    return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-        <div className="flex items-center justify-center min-h-screen">
-          <Card className="w-full max-w-md mx-4">
-            <CardContent className="flex items-center gap-4 p-6">
-              <Loader2 className="h-5 w-5 animate-spin text-[#E7EB5D]" />
-              <span className="text-slate-600">Preparing your analysis...</span>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    )
-  }
+if (!hasLoadedIdea) {
+return (
+<main className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+<div className="flex items-center justify-center min-h-screen">
+<Card className="w-full max-w-md mx-4">
+<CardContent className="flex items-center gap-4 p-6">
+<Loader2 className="h-5 w-5 animate-spin text-[#E7EB5D]" />
+<span className="text-slate-600">Preparing your analysis...</span>
+</CardContent>
+</Card>
+</div>
+</main>
+)
+}
+
+if (error) {
+return (
+<main className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+<div className="flex items-center justify-center min-h-screen">
+<Card className="w-full max-w-md mx-4 border-red-200">
+<CardContent className="p-6">
+<div className="flex items-start gap-4">
+<AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+<div>
+<h2 className="text-base font-semibold text-slate-900 mb-1">Analysis Failed</h2>
+<p className="text-sm text-slate-600">{error}</p>
+<button
+type="button"
+onClick={() => router.push('/')}
+className="mt-4 text-sm font-medium text-[#E7EB5D] hover:underline"
+>
+Try again
+</button>
+</div>
+</div>
+</CardContent>
+</Card>
+</div>
+</main>
+)
+}
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
